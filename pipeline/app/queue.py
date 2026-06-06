@@ -1,0 +1,48 @@
+"""Consumo do Redis Stream publicado pela captura.
+
+Usa grupo de consumidores para entrega confiável: cada evento é confirmado (ACK)
+só após processado. Se o pipeline cair no meio, o evento volta a ser entregue
+(sem perda de dados — RNF-05).
+"""
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+import redis
+
+from .config import config, logger
+
+_r = redis.Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, decode_responses=True)
+
+
+def garantir_grupo() -> None:
+    """Cria o grupo de consumidores (idempotente)."""
+    try:
+        _r.xgroup_create(config.REDIS_STREAM, config.REDIS_GROUP, id="0", mkstream=True)
+        logger.info("Grupo de consumidores '%s' criado", config.REDIS_GROUP)
+    except redis.ResponseError as err:
+        if "BUSYGROUP" not in str(err):
+            raise  # grupo já existe é esperado; outros erros propagam
+
+
+def consumir(consumidor: str = "pipeline-1", bloco_ms: int = 5000) -> Iterator[tuple[str, int]]:
+    """Itera indefinidamente entregando (id_do_evento, mensagem_id)."""
+    garantir_grupo()
+    while True:
+        resposta = _r.xreadgroup(
+            config.REDIS_GROUP,
+            consumidor,
+            {config.REDIS_STREAM: ">"},
+            count=10,
+            block=bloco_ms,
+        )
+        if not resposta:
+            continue
+        for _stream, eventos in resposta:
+            for evento_id, campos in eventos:
+                yield evento_id, int(campos["mensagem_id"])
+
+
+def confirmar(evento_id: str) -> None:
+    """ACK do evento processado."""
+    _r.xack(config.REDIS_STREAM, config.REDIS_GROUP, evento_id)

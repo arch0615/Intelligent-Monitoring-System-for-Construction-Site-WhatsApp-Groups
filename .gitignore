@@ -1,0 +1,31 @@
+# Segredos / credenciais
+.env
+*.env
+!.env.example
+capture-worker/auth_state/
+*.pem
+*.key
+
+# Mídia capturada e dados (NÃO versionar — conteúdo de clientes / LGPD)
+media/
+!media/.gitkeep
+data/
+
+# Node
+node_modules/
+capture-worker/dist/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Modelos Whisper baixados em runtime
+pipeline/models/
+
+# Logs e sistema
+*.log
+.DS_Store

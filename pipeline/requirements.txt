@@ -1,0 +1,9 @@
+# Pipeline de processamento (Etapa 2)
+anthropic>=0.69.0          # SDK oficial da Claude (classificação)
+faster-whisper>=1.1.0      # transcrição local (sem custo de API)
+psycopg[binary]>=3.2.0     # PostgreSQL
+redis>=5.2.0               # consumo do stream de captura
+pdfplumber>=0.11.0         # extração de texto de PDFs
+python-docx>=1.1.2         # extração de texto de .docx
+python-dotenv>=1.0.1       # carregamento do .env em dev local
+# ffmpeg é binário do sistema (instalado via Dockerfile), não pacote pip.
