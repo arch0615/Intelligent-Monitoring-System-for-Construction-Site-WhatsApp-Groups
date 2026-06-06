@@ -15,7 +15,7 @@ Erros em uma mensagem não derrubam o worker: marcamos status 'erro' e seguimos.
 """
 from __future__ import annotations
 
-from . import classify, db, documents, transcribe, video
+from . import alerts, classify, db, documents, transcribe, video
 from .config import logger
 from .queue import confirmar, consumir
 
@@ -74,8 +74,12 @@ def processar(mensagem_id: int) -> None:
         texto, imagens = _derivar_texto_e_imagens(msg)
         itens = classify.classificar(texto, imagens)
         db.gravar_analises(mensagem_id, itens, classify.config.CLAUDE_MODEL)
+        # Alertas proativos (RF-05): dispara imediatamente para itens urgentes.
+        enviados = alerts.processar_alertas(mensagem_id)
         db.marcar_status(mensagem_id, "processada")
-        logger.info("Mensagem %s processada (%d item(ns))", mensagem_id, len(itens))
+        logger.info(
+            "Mensagem %s processada (%d item(ns), %d alerta(s))", mensagem_id, len(itens), enviados
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Erro ao processar mensagem %s", mensagem_id)
         db.marcar_status(mensagem_id, "erro", str(exc))

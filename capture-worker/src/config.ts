@@ -29,4 +29,9 @@ export const config = {
   },
   mediaDir: process.env.MEDIA_DIR ?? "/media",
   logLevel: process.env.LOG_LEVEL ?? "info",
+  // Alertas operacionais (Plano B): notificação de bloqueio/desconexão do número.
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+    chatId: process.env.TELEGRAM_CHAT_ID ?? "",
+  },
 };

@@ -48,6 +48,14 @@ class Config:
     # Vídeo (RF-06) — intervalo configurável de extração de frames (P-05)
     VIDEO_FRAME_INTERVAL = int(os.environ.get("VIDEO_FRAME_INTERVAL_SECONDS", "10"))
 
+    # Alertas proativos (RF-05) — Telegram (NÃO usar o nº de monitoramento).
+    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+    # Urgências que disparam alerta imediato (as demais aguardam o relatório).
+    ALERTA_URGENCIAS = tuple(
+        u.strip() for u in os.environ.get("ALERTA_URGENCIAS", "critica,alta").split(",") if u.strip()
+    )
+
     MEDIA_DIR = os.environ.get("MEDIA_DIR", "/media")
     MODELS_DIR = os.environ.get("WHISPER_MODELS_DIR", "/app/models")
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()

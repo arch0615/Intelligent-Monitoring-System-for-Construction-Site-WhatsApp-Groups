@@ -22,7 +22,7 @@ Este repositório corresponde ao **scaffold das Etapas 0–2** do plano diário:
 | 1 | Worker de captura (Node.js + Baileys) | ✅ esqueleto funcional |
 | 2 | Pipeline (Whisper + ffmpeg + docs + Claude) | ✅ esqueleto funcional |
 | 3 | Relatório diário + consulta de histórico + painel (FastAPI) | ✅ esqueleto funcional |
-| 4 | Alertas proativos (Telegram/e-mail) | ⏳ a fazer |
+| 4 | Alertas proativos (Telegram) + notificação de bloqueio (Plano B) | ✅ esqueleto funcional |
 | 5 | Painel de grupos (RF-08), escala, documentação, handover | ⏳ a fazer |
 
 Ações externas pendentes (não são código): provisionar o VPS, o número
@@ -101,6 +101,16 @@ Para gerar/entregar sob demanda (teste/DEMO):
 ```bash
 curl -X POST "http://localhost:8000/api/relatorio/enviar"
 ```
+
+### Alertas proativos (Etapa 4)
+
+Itens classificados como **crítica/alta** (configurável em `ALERTA_URGENCIAS`)
+disparam um alerta imediato no Telegram, sem esperar o relatório diário (RF-05).
+A tabela `alertas` garante dedup — cada situação é notificada uma única vez.
+
+Se o número de monitoramento for deslogado/bloqueado, o worker de captura envia
+uma **notificação de bloqueio** (Plano B / RF-09) para acionar o número de backup.
+Configure `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` no `.env`.
 
 ---
 

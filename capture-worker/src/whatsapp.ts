@@ -14,6 +14,7 @@ import { config } from "./config.js";
 import { logger } from "./logger.js";
 import { salvarMensagem, type MensagemNormalizada, type MidiaNormalizada } from "./db.js";
 import { publicarEvento } from "./redis.js";
+import { notificarBloqueio } from "./alerts.js";
 
 // ---------------------------------------------------------------------
 // Conexão estável ao número dedicado (Etapa 1).
@@ -158,8 +159,9 @@ export async function iniciarCaptura(): Promise<void> {
       if (deveReconectar) {
         setTimeout(() => iniciarCaptura(), 3000); // reconexão automática
       } else {
-        // loggedOut = número deslogado/bloqueado -> aciona Plano B (Etapa 4).
-        logger.error("Número deslogado — acionar Plano B (notificação + número de backup)");
+        // loggedOut = número deslogado/bloqueado -> aciona Plano B (RF-09).
+        logger.error("Número deslogado — acionando Plano B (notificação + número de backup)");
+        void notificarBloqueio(`desconexão definitiva (status ${status ?? "desconhecido"})`);
       }
     } else if (connection === "open") {
       logger.info("Conexão estabelecida — capturando em tempo real");
