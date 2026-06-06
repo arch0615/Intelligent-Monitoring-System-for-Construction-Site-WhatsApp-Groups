@@ -23,3 +23,9 @@ export async function publicarEvento(mensagemId: number): Promise<void> {
   await redis.xadd(config.redis.stream, "*", "mensagem_id", String(mensagemId));
   logger.debug({ mensagemId }, "Evento publicado no stream");
 }
+
+// Heartbeat de saúde (Etapa 5). A API lê esta chave para mostrar se a captura
+// está viva. TTL de 90s: se o worker cair, a chave expira e o painel acusa.
+export async function registrarSaude(): Promise<void> {
+  await redis.set("saude:captura", new Date().toISOString(), "EX", 90);
+}

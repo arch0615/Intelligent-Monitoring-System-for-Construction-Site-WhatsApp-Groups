@@ -7,6 +7,7 @@ só após processado. Se o pipeline cair no meio, o evento volta a ser entregue
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import datetime
 
 import redis
 
@@ -29,6 +30,7 @@ def consumir(consumidor: str = "pipeline-1", bloco_ms: int = 5000) -> Iterator[t
     """Itera indefinidamente entregando (id_do_evento, mensagem_id)."""
     garantir_grupo()
     while True:
+        registrar_saude()  # heartbeat a cada ciclo (inclui períodos ociosos)
         resposta = _r.xreadgroup(
             config.REDIS_GROUP,
             consumidor,
@@ -46,3 +48,8 @@ def consumir(consumidor: str = "pipeline-1", bloco_ms: int = 5000) -> Iterator[t
 def confirmar(evento_id: str) -> None:
     """ACK do evento processado."""
     _r.xack(config.REDIS_STREAM, config.REDIS_GROUP, evento_id)
+
+
+def registrar_saude() -> None:
+    """Heartbeat de saúde (Etapa 5). Chave com TTL 90s, lida pela API."""
+    _r.set("saude:pipeline", datetime.now().isoformat(), ex=90)

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Saúde do sistema{% endblock %}
+
+{% macro selo(ok) %}
+  <span class="{{ 'urg-baixa' if ok else 'urg-critica' }}">{{ "● OK" if ok else "✕ FALHA" }}</span>
+{% endmacro %}
+
+{% block conteudo %}
+  <div class="card">
+    <h1>Saúde do sistema
+      <span class="{{ 'urg-baixa' if saude.status == 'ok' else 'urg-critica' }}">
+        — {{ saude.status }}
+      </span>
+    </h1>
+    <p class="meta">Atualize a página para checar de novo. Heartbeats expiram em 90s.</p>
+  </div>
+
+  <div class="card">
+    <div class="item"><strong>PostgreSQL</strong> {{ selo(saude.postgres.ok) }}
+      {% if saude.postgres.erro %}<div class="meta">{{ saude.postgres.erro }}</div>{% endif %}
+    </div>
+    <div class="item"><strong>Redis</strong> {{ selo(saude.redis.ok) }}
+      {% if saude.redis.erro %}<div class="meta">{{ saude.redis.erro }}</div>{% endif %}
+    </div>
+    <div class="item"><strong>Worker de captura</strong> {{ selo(saude.captura.vivo) }}
+      <div class="meta">
+        {% if saude.captura.ha_segundos is not none %}
+          último heartbeat há {{ saude.captura.ha_segundos }}s
+        {% else %}sem heartbeat{% endif %}
+      </div>
+    </div>
+    <div class="item"><strong>Pipeline de processamento</strong> {{ selo(saude.pipeline.vivo) }}
+      <div class="meta">
+        {% if saude.pipeline.ha_segundos is not none %}
+          último heartbeat há {{ saude.pipeline.ha_segundos }}s
+        {% else %}sem heartbeat{% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

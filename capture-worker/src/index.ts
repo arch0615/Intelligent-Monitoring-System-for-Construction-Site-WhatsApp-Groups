@@ -5,10 +5,13 @@
 import { iniciarCaptura } from "./whatsapp.js";
 import { logger } from "./logger.js";
 import { pool } from "./db.js";
-import { redis } from "./redis.js";
+import { redis, registrarSaude } from "./redis.js";
 
 async function main(): Promise<void> {
   logger.info("Iniciando worker de captura (Baileys)...");
+  // Heartbeat de saúde a cada 30s (chave com TTL 90s, lida pela API).
+  await registrarSaude();
+  setInterval(() => void registrarSaude(), 30_000);
   await iniciarCaptura();
 }
 

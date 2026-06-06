@@ -8,7 +8,7 @@ from __future__ import annotations
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import reports
+from . import maintenance, reports
 from .config import config, logger
 
 scheduler = BackgroundScheduler(timezone=config.TZ)
@@ -19,6 +19,11 @@ def _job_relatorio_diario() -> None:
     reports.gerar_e_entregar()
 
 
+def _job_retencao_midia() -> None:
+    logger.info("Disparando job de retenção de mídia")
+    maintenance.arquivar_midia_antiga()
+
+
 def iniciar() -> None:
     scheduler.add_job(
         _job_relatorio_diario,
@@ -26,9 +31,16 @@ def iniciar() -> None:
         id="relatorio_diario",
         replace_existing=True,
     )
+    # Retenção de mídia: madrugada (03:30), fora do horário de pico (Etapa 5).
+    scheduler.add_job(
+        _job_retencao_midia,
+        trigger=CronTrigger(hour=3, minute=30),
+        id="retencao_midia",
+        replace_existing=True,
+    )
     scheduler.start()
     logger.info(
-        "Scheduler iniciado — relatório diário às %02d:%02d (%s)",
+        "Scheduler iniciado — relatório diário às %02d:%02d (%s); retenção 03:30",
         config.RELATORIO_HORA,
         config.RELATORIO_MINUTO,
         config.TZ,

@@ -20,7 +20,7 @@ from fastapi import FastAPI, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from . import db, reports, scheduler
+from . import db, health, maintenance, reports, scheduler
 from .config import logger
 
 templates = Jinja2Templates(directory="app/templates")
@@ -71,6 +71,11 @@ def grupos_html(request: Request):
     return templates.TemplateResponse(request, "grupos.html", {"grupos": db.listar_grupos()})
 
 
+@app.get("/saude", response_class=HTMLResponse)
+def saude_html(request: Request):
+    return templates.TemplateResponse(request, "saude.html", {"saude": health.status()})
+
+
 @app.post("/grupos/{grupo_id}/ativar")
 def grupos_toggle(grupo_id: int, ativo: bool = Form(...)):
     db.definir_grupo_ativo(grupo_id, ativo)
@@ -95,6 +100,13 @@ def api_enviar_relatorio(data: str | None = None, grupo_id: int | None = None):
     return {"entregue": resultado["entregue"], "total": resultado["relatorio"]["total"]}
 
 
+@app.post("/api/manutencao/retencao")
+def api_retencao():
+    """Dispara a retenção de mídia agora (uso manual/operacional)."""
+    return {"arquivadas": maintenance.arquivar_midia_antiga()}
+
+
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health_endpoint():
+    """Health check completo (Postgres, Redis, heartbeats de captura e pipeline)."""
+    return health.status()

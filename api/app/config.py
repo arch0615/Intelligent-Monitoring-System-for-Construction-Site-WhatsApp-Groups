@@ -39,6 +39,11 @@ class Config:
     RELATORIO_HORA = int(os.environ.get("RELATORIO_HORA", "18"))
     RELATORIO_MINUTO = int(os.environ.get("RELATORIO_MINUTO", "0"))
 
+    # Retenção de mídia (Etapa 5) — dias após os quais o binário é removido do
+    # disco (metadados e texto/análise permanecem no banco). 0 = nunca arquivar.
+    RETENCAO_MIDIA_DIAS = int(os.environ.get("RETENCAO_MIDIA_DIAS", "90"))
+    MEDIA_DIR = os.environ.get("MEDIA_DIR", "/media")
+
     TZ = os.environ.get("TZ", "America/Sao_Paulo")
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
 

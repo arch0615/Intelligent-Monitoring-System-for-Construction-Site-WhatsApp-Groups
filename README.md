@@ -23,11 +23,15 @@ Este repositório corresponde ao **scaffold das Etapas 0–2** do plano diário:
 | 2 | Pipeline (Whisper + ffmpeg + docs + Claude) | ✅ esqueleto funcional |
 | 3 | Relatório diário + consulta de histórico + painel (FastAPI) | ✅ esqueleto funcional |
 | 4 | Alertas proativos (Telegram) + notificação de bloqueio (Plano B) | ✅ esqueleto funcional |
-| 5 | Painel de grupos (RF-08), escala, documentação, handover | ⏳ a fazer |
+| 5 | Saúde/monitoramento, retenção de mídia, painel de grupos, documentação, handover | ✅ esqueleto funcional |
 
 Ações externas pendentes (não são código): provisionar o VPS, o número
 dedicado + número de backup, a chave da API Claude e o bot de alertas. Ver
 **Pendências bloqueadoras (P-01..P-08)** no `plano_diario_de_trabalho.txt`.
+
+> **Documentação completa:** [docs/ARQUITETURA.md](docs/ARQUITETURA.md) ·
+> [docs/MANUAL_CLIENTE.md](docs/MANUAL_CLIENTE.md) ·
+> [docs/DEPLOY.md](docs/DEPLOY.md) · [docs/HANDOVER.md](docs/HANDOVER.md)
 
 ---
 
@@ -111,6 +115,18 @@ A tabela `alertas` garante dedup — cada situação é notificada uma única ve
 Se o número de monitoramento for deslogado/bloqueado, o worker de captura envia
 uma **notificação de bloqueio** (Plano B / RF-09) para acionar o número de backup.
 Configure `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` no `.env`.
+
+### Saúde, escala e manutenção (Etapa 5)
+
+- **Saúde:** página `/saude` no painel ou `GET /health` (JSON) — checa Postgres,
+  Redis e os heartbeats dos workers de captura e pipeline.
+- **Retenção de mídia:** job diário (03:30) remove binários antigos do disco
+  (`RETENCAO_MIDIA_DIAS`), preservando metadados e análises. Manual:
+  `curl -X POST http://localhost:8000/api/manutencao/retencao`.
+- **Escala 1 → N grupos:** basta adicionar o número de monitoramento a mais
+  grupos; a captura processa todos os grupos ativos.
+- **Operação, Plano B e handover:** ver [docs/DEPLOY.md](docs/DEPLOY.md) e
+  [docs/HANDOVER.md](docs/HANDOVER.md).
 
 ---
 
