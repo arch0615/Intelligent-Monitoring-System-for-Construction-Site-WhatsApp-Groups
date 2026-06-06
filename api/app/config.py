@@ -1,0 +1,52 @@
+"""Configuração da API (lida do ambiente)."""
+from __future__ import annotations
+
+import logging
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def _required(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"Variável de ambiente obrigatória ausente: {name}")
+    return value
+
+
+class Config:
+    PG_HOST = os.environ.get("POSTGRES_HOST", "postgres")
+    PG_PORT = int(os.environ.get("POSTGRES_PORT", "5432"))
+    PG_USER = _required("POSTGRES_USER")
+    PG_PASSWORD = _required("POSTGRES_PASSWORD")
+    PG_DB = _required("POSTGRES_DB")
+
+    @property
+    def pg_dsn(self) -> str:
+        return (
+            f"host={self.PG_HOST} port={self.PG_PORT} user={self.PG_USER} "
+            f"password={self.PG_PASSWORD} dbname={self.PG_DB}"
+        )
+
+    # Entrega do relatório diário (Telegram recomendado — NÃO usar o nº de
+    # monitoramento, que é somente leitura).
+    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+    # Horário do relatório diário (cron). Padrão: 18h, horário do servidor.
+    RELATORIO_HORA = int(os.environ.get("RELATORIO_HORA", "18"))
+    RELATORIO_MINUTO = int(os.environ.get("RELATORIO_MINUTO", "0"))
+
+    TZ = os.environ.get("TZ", "America/Sao_Paulo")
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
+
+
+config = Config()
+
+logging.basicConfig(
+    level=getattr(logging, config.LOG_LEVEL, logging.INFO),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+logger = logging.getLogger("api")

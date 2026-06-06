@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Consulta de histórico{% endblock %}
+
+{% block conteudo %}
+  <div class="card">
+    <h1>Consulta de histórico</h1>
+    <p class="meta">Busca no conteúdo das mensagens (texto, transcrições e documentos).</p>
+    <form method="get" action="/historico">
+      <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento 3º andar, medição, prazo..." size="40" autofocus>
+      <button type="submit">Buscar</button>
+    </form>
+  </div>
+
+  {% if q %}
+    <div class="card">
+      <h2>{{ resultados|length }} resultado(s) para “{{ q }}”</h2>
+      {% if resultados %}
+        {% for r in resultados %}
+          <div class="item">
+            {{ r.texto or "(sem texto)" }}
+            <div class="meta">
+              {{ r.grupo_nome or "grupo" }}
+              {% if r.remetente %}· {{ r.remetente }}{% endif %}
+              · {{ r.tipo }} · {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="vazio">Nenhum registro encontrado.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

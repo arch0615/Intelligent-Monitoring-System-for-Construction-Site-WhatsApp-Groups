@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Relatório — {{ relatorio.dia }}{% endblock %}
+
+{% macro lista(itens) %}
+  {% if itens %}
+    {% for i in itens %}
+      <div class="item">
+        <span class="urg-{{ i.urgencia }}">[{{ i.urgencia }}]</span> {{ i.resumo }}
+        <div class="meta">
+          {{ i.grupo_nome or "grupo" }}
+          {% if i.remetente %}· {{ i.remetente }}{% endif %}
+          · {{ i.enviada_em.strftime("%d/%m %H:%M") }}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="vazio">Nada nesta categoria.</div>
+  {% endif %}
+{% endmacro %}
+
+{% block conteudo %}
+  <div class="card">
+    <h1>Relatório diário — {{ relatorio.dia }}</h1>
+    <form method="get" action="/" class="inline">
+      <input type="date" name="data" value="{{ relatorio.dia }}">
+      <select name="grupo_id">
+        <option value="">Todos os grupos</option>
+        {% for g in grupos %}
+          <option value="{{ g.id }}" {% if grupo_id == g.id %}selected{% endif %}>
+            {{ g.nome or g.wa_jid }}
+          </option>
+        {% endfor %}
+      </select>
+      <button type="submit">Ver</button>
+    </form>
+    <p class="meta">{{ relatorio.total }} item(ns) · {{ relatorio.criticos|length }} crítico(s)/urgente(s)</p>
+  </div>
+
+  <div class="card"><h2>⚠️ Pendências ({{ relatorio.pendencias|length }})</h2>{{ lista(relatorio.pendencias) }}</div>
+  <div class="card"><h2>❓ Dúvidas ({{ relatorio.duvidas|length }})</h2>{{ lista(relatorio.duvidas) }}</div>
+  <div class="card"><h2>✅ Decisões ({{ relatorio.decisoes|length }})</h2>{{ lista(relatorio.decisoes) }}</div>
+{% endblock %}

@@ -74,16 +74,16 @@ services:
       - ./media:/media
       - ./pipeline/models:/app/models
 
-  # API / Painel — habilitado a partir da Etapa 3 (placeholder por enquanto).
-  # api:
-  #   build: ./api
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   ports:
-  #     - "8000:8000"
+  # API / Painel / Relatórios — FastAPI + APScheduler (Etapa 3)
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
 
 volumes:
   pgdata:

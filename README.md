@@ -21,7 +21,7 @@ Este repositório corresponde ao **scaffold das Etapas 0–2** do plano diário:
 | 0 | Repo, Docker Compose, Postgres + Redis, `.env`, schema do banco | ✅ scaffold |
 | 1 | Worker de captura (Node.js + Baileys) | ✅ esqueleto funcional |
 | 2 | Pipeline (Whisper + ffmpeg + docs + Claude) | ✅ esqueleto funcional |
-| 3 | Relatório diário + consulta de histórico (FastAPI) | ⏳ a fazer |
+| 3 | Relatório diário + consulta de histórico + painel (FastAPI) | ✅ esqueleto funcional |
 | 4 | Alertas proativos (Telegram/e-mail) | ⏳ a fazer |
 | 5 | Painel de grupos (RF-08), escala, documentação, handover | ⏳ a fazer |
 
@@ -86,6 +86,22 @@ Acompanhar o processamento:
 docker compose logs -f pipeline
 ```
 
+### Painel e relatórios (Etapa 3)
+
+Com o ambiente no ar, o painel fica em **http://localhost:8000**:
+
+- `/` — relatório do dia (pendências, dúvidas, decisões), filtrável por data e grupo.
+- `/historico?q=...` — consulta de histórico por busca full-text (RF-04).
+- `/grupos` — ativar/desativar grupos monitorados (RF-08, base do painel da Etapa 5).
+
+O relatório diário é disparado automaticamente pelo APScheduler no horário
+`RELATORIO_HORA:RELATORIO_MINUTO` (padrão 18:00) e entregue pelo Telegram.
+Para gerar/entregar sob demanda (teste/DEMO):
+
+```bash
+curl -X POST "http://localhost:8000/api/relatorio/enviar"
+```
+
 ---
 
 ## Estrutura do repositório
@@ -113,6 +129,14 @@ docker compose logs -f pipeline
 │       ├── classify.py        # API Claude (classificação)
 │       ├── db.py              # leitura/escrita no Postgres
 │       └── config.py
+├── api/                       # Etapa 3 — FastAPI (relatório, histórico, painel)
+│   └── app/
+│       ├── main.py            # endpoints HTML + JSON
+│       ├── reports.py         # geração + entrega do relatório diário
+│       ├── scheduler.py       # APScheduler (relatório diário agendado)
+│       ├── db.py              # consultas (relatório, busca full-text)
+│       ├── config.py
+│       └── templates/         # painel (Jinja: relatório, histórico, grupos)
 ├── media/                     # mídia capturada (NÃO versionada — LGPD)
 └── docs/                      # documentação
 ```

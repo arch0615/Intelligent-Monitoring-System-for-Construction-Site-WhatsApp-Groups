@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Grupos monitorados{% endblock %}
+
+{% block conteudo %}
+  <div class="card">
+    <h1>Grupos monitorados</h1>
+    <p class="meta">
+      Ative ou desative o monitoramento de cada grupo (RF-08). A captura só
+      processa grupos ativos. Versão completa do painel de autogestão chega na Etapa 5.
+    </p>
+  </div>
+
+  <div class="card">
+    {% if grupos %}
+      {% for g in grupos %}
+        <div class="item">
+          <strong>{{ g.nome or g.wa_jid }}</strong>
+          <span class="meta">{{ g.wa_jid }}</span>
+          <form class="inline" method="post" action="/grupos/{{ g.id }}/ativar" style="float:right">
+            <input type="hidden" name="ativo" value="{{ 'false' if g.is_active else 'true' }}">
+            <button type="submit">{{ "Desativar" if g.is_active else "Ativar" }}</button>
+          </form>
+          <span class="{{ 'urg-baixa' if not g.is_active }}">
+            {{ "● ativo" if g.is_active else "○ inativo" }}
+          </span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="vazio">Nenhum grupo ainda. Grupos aparecem aqui após a primeira mensagem capturada.</div>
+    {% endif %}
+  </div>
+{% endblock %}
