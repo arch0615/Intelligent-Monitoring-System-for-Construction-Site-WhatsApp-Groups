@@ -29,3 +29,10 @@ pipeline/models/
 # Logs e sistema
 *.log
 .DS_Store
+Thumbs.db
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*~
