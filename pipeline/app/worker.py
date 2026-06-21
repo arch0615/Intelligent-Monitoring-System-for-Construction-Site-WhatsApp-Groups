@@ -15,9 +15,12 @@ Erros em uma mensagem não derrubam o worker: marcamos status 'erro' e seguimos.
 """
 from __future__ import annotations
 
+import threading
+import time
+
 from . import alerts, classify, db, documents, transcribe, video
 from .config import logger
-from .queue import confirmar, consumir
+from .queue import confirmar, consumir, registrar_saude
 
 
 def _derivar_texto_e_imagens(msg: db.Mensagem) -> tuple[str | None, list[str]]:
@@ -85,8 +88,20 @@ def processar(mensagem_id: int) -> None:
         db.marcar_status(mensagem_id, "erro", str(exc))
 
 
+def _heartbeat_loop() -> None:
+    """Atualiza o heartbeat de saúde a cada 30s, independentemente de o consumidor
+    estar bloqueado esperando mensagens (consumidor ocioso = saudável)."""
+    while True:
+        try:
+            registrar_saude()
+        except Exception:  # noqa: BLE001 — heartbeat nunca derruba o worker
+            logger.exception("Falha ao registrar heartbeat")
+        time.sleep(30)
+
+
 def main() -> None:
     logger.info("Pipeline de processamento iniciado — aguardando eventos")
+    threading.Thread(target=_heartbeat_loop, daemon=True).start()
     for evento_id, mensagem_id in consumir():
         try:
             processar(mensagem_id)

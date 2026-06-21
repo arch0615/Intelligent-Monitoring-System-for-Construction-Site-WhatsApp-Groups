@@ -6,6 +6,7 @@ só após processado. Se o pipeline cair no meio, o evento volta a ser entregue
 """
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from datetime import datetime
 
@@ -30,14 +31,26 @@ def consumir(consumidor: str = "pipeline-1", bloco_ms: int = 5000) -> Iterator[t
     """Itera indefinidamente entregando (id_do_evento, mensagem_id)."""
     garantir_grupo()
     while True:
-        registrar_saude()  # heartbeat a cada ciclo (inclui períodos ociosos)
-        resposta = _r.xreadgroup(
-            config.REDIS_GROUP,
-            consumidor,
-            {config.REDIS_STREAM: ">"},
-            count=10,
-            block=bloco_ms,
-        )
+        try:
+            # Bloqueia esperando novas mensagens; o heartbeat de saúde roda em
+            # thread separada (ver worker.py), pois ficar bloqueado aqui é normal.
+            resposta = _r.xreadgroup(
+                config.REDIS_GROUP,
+                consumidor,
+                {config.REDIS_STREAM: ">"},
+                count=10,
+                block=bloco_ms,
+            )
+        except redis.exceptions.TimeoutError:
+            # Janela de `block` sem mensagens: comportamento NORMAL em ocioso.
+            # (o cliente redis levanta TimeoutError no bloqueio sem dados)
+            continue
+        except redis.exceptions.ConnectionError as err:
+            # Redis indisponível temporariamente: aguarda e tenta de novo,
+            # sem derrubar o worker (RNF-02 — estabilidade).
+            logger.warning("Redis indisponível, reconectando em 2s: %s", err)
+            time.sleep(2)
+            continue
         if not resposta:
             continue
         for _stream, eventos in resposta:
