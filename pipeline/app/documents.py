@@ -13,9 +13,15 @@ def extrair_texto(caminho: str, mime_type: str | None = None) -> str:
     """Extrai texto de um documento conforme o tipo. Retorna string vazia se não suportado."""
     ext = Path(caminho).suffix.lower()
     try:
-        if ext == ".pdf" or (mime_type and "pdf" in mime_type):
+        # A extensão tem prioridade sobre o mime (mais confiável; evita conflito
+        # quando o mime informado diverge do arquivo real).
+        if ext == ".pdf":
             return _extrair_pdf(caminho)
-        if ext in (".docx",) or (mime_type and "word" in mime_type):
+        if ext == ".docx":
+            return _extrair_docx(caminho)
+        if mime_type and "pdf" in mime_type:
+            return _extrair_pdf(caminho)
+        if mime_type and "word" in mime_type:
             return _extrair_docx(caminho)
     except Exception:  # noqa: BLE001 — extração é best-effort
         logger.exception("Falha ao extrair texto de %s", caminho)
