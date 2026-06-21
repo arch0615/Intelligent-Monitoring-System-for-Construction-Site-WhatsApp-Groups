@@ -1,6 +1,9 @@
 # Worker de captura — Node.js + Baileys (Etapa 1)
 FROM node:22-alpine
 
+# git: algumas dependências do Baileys são instaladas via URL git.
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Instala dependências primeiro (cache de build)
