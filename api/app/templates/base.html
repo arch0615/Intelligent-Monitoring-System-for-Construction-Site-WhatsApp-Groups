@@ -19,6 +19,7 @@
       --sidebar-active: #16223c;
       --accent: #3b82f6;        /* azul corporativo (realce p/ fundo escuro) */
       --accent-soft: #16294d;
+      --card-border: #5b8fd6;   /* borda dos cartões (azul claro) */
       --crit: #f87171; --crit-bg: rgba(248,113,113,.14);
       --alta: #fb923c; --alta-bg: rgba(251,146,60,.14);
       --media:#fbbf24; --media-bg: rgba(251,191,36,.13);
@@ -73,12 +74,12 @@
     .content { padding: 26px 28px 40px; max-width: 1080px; width: 100%; }
 
     /* ---------- componentes ---------- */
-    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); box-shadow: var(--shadow); }
     .card.pad { padding: 18px 20px; }
     .card + .card, .stack > * + * { margin-top: 16px; }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
-    .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+    .stat { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
     .stat .n { font-size: 28px; font-weight: 800; line-height: 1; }
     .stat .l { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 7px; text-transform: uppercase; letter-spacing: .03em; }
     .stat.accent { border-left: 3px solid var(--accent); }
