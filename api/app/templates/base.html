@@ -11,7 +11,7 @@
   <style>
     :root {
       --bg: #070d1a;            /* preto-azulado (fundo) */
-      --surface: #111a2e;       /* cartão navy escuro */
+      --surface: rgba(20, 31, 56, 0.66);   /* cartão navy com leve transparência */
       --ink: #e6eaf2;           /* texto claro */
       --muted: #8b94a8;
       --line: #1e2942;
@@ -66,21 +66,22 @@
 
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .topbar {
-      height: 64px; background: var(--surface); border-bottom: 1px solid var(--line);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 28px; position: sticky; top: 0; z-index: 5;
+      min-height: 64px; background: var(--surface); border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 28px; position: sticky; top: 0; z-index: 5;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     .topbar h1 { font-size: 18px; font-weight: 700; margin: 0; }
-    .topbar .sub { color: var(--muted); font-size: 13px; font-weight: 500; }
-    .content { padding: 26px 28px 40px; max-width: 1080px; width: 100%; }
+    .topbar .sub { color: var(--muted); font-size: 13px; font-weight: 500; text-align: right; }
+    .content { padding: 26px 28px 40px; max-width: 1080px; width: 100%; margin: 0 auto; }
 
     /* ---------- componentes ---------- */
-    .card { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .card.pad { padding: 18px 20px; }
     .card + .card, .stack > * + * { margin-top: 16px; }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
-    .stat { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+    .stat { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .stat .n { font-size: 28px; font-weight: 800; line-height: 1; }
     .stat .l { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 7px; text-transform: uppercase; letter-spacing: .03em; }
     .stat.accent { border-left: 3px solid var(--accent); }
@@ -124,13 +125,38 @@
     .ok { color: var(--green); background: var(--green-bg); }
     .down { color: var(--crit); background: var(--crit-bg); }
 
+    /* tablet */
+    @media (max-width: 1024px) {
+      .sidebar { width: 210px; }
+      .content { padding: 22px 22px 36px; }
+    }
+    /* mobile: barra superior com marca + navegação horizontal rolável */
     @media (max-width: 760px) {
       .app { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; overflow-x: auto; }
-      .brand { padding: 12px 16px; } .brand span, .sidebar-foot { display: none; }
-      nav.menu { flex-direction: row; padding: 8px; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .content { padding: 18px 16px 32px; }
+      .sidebar {
+        width: 100%; height: auto; position: static; flex-direction: column;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { padding: 12px 16px 8px; }
+      .sidebar-foot { display: none; }
+      nav.menu {
+        flex-direction: row; gap: 6px; padding: 0 10px 10px;
+        overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      }
+      nav.menu::-webkit-scrollbar { display: none; }
+      nav.menu a { flex-shrink: 0; padding: 8px 13px; }
+      .topbar { position: static; padding: 12px 16px; flex-wrap: wrap; }
+      .topbar h1 { font-size: 17px; }
+      .content { padding: 16px 14px 30px; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat .n { font-size: 24px; }
+      /* linhas com controles (grupos/saúde) quebram em telas estreitas */
+      .item { flex-wrap: wrap; }
+      .toolbar, .search { width: 100%; }
+      .toolbar > select, .toolbar > input, .search > input { flex: 1 1 130px; min-width: 0; }
+    }
+    @media (max-width: 380px) {
+      .brand span { display: none; }
     }
   </style>
 </head>
