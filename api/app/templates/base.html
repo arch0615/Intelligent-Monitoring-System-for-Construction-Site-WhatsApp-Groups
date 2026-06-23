@@ -9,21 +9,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #eef0f4;
-      --surface: #ffffff;
-      --ink: #1b1f27;
-      --muted: #6b7280;
-      --line: #e4e7ec;
-      --sidebar: #1a1d24;
-      --sidebar-ink: #c7ccd6;
-      --sidebar-active: #2a2e38;
-      --accent: #2563eb;        /* azul corporativo */
-      --accent-soft: #e8f0fe;
-      --crit: #dc2626; --crit-bg:#fdecec;
-      --alta: #ea580c; --alta-bg:#fdeee3;
-      --media:#b7791f; --media-bg:#fdf6e3;
-      --baixa:#64748b; --baixa-bg:#eef1f5;
-      --green:#16a34a; --green-bg:#e9f7ee;
+      --bg: #070d1a;            /* preto-azulado (fundo) */
+      --surface: #111a2e;       /* cartão navy escuro */
+      --ink: #e6eaf2;           /* texto claro */
+      --muted: #8b94a8;
+      --line: #1e2942;
+      --sidebar: #050a15;       /* ainda mais escuro */
+      --sidebar-ink: #aab3c6;
+      --sidebar-active: #16223c;
+      --accent: #3b82f6;        /* azul corporativo (realce p/ fundo escuro) */
+      --accent-soft: #16294d;
+      --crit: #f87171; --crit-bg: rgba(248,113,113,.14);
+      --alta: #fb923c; --alta-bg: rgba(251,146,60,.14);
+      --media:#fbbf24; --media-bg: rgba(251,191,36,.13);
+      --baixa:#94a3b8; --baixa-bg: rgba(148,163,184,.14);
+      --green:#34d399; --green-bg: rgba(52,211,153,.15);
       --radius: 12px;
       --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.05);
     }
@@ -105,12 +105,14 @@
     /* filtros / forms */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     input[type=date], input[type=text], select {
-      font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink);
+      font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: #0c1426; color: var(--ink);
     }
+    input::placeholder { color: #5d6679; }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.7); }
     input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
     .btn { font: inherit; font-weight: 600; padding: 9px 16px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; cursor: pointer; transition: .15s; }
-    .btn:hover { filter: brightness(.95); }
-    .btn.ghost { background: #f3f4f6; color: var(--ink); border: 1px solid var(--line); }
+    .btn:hover { filter: brightness(1.08); }
+    .btn.ghost { background: #1a2540; color: var(--ink); border: 1px solid var(--line); }
     .search { display: flex; gap: 10px; }
     .search input[type=text] { flex: 1; }
 
