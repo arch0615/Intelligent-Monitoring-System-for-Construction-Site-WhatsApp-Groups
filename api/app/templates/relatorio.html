@@ -1,42 +1,59 @@
 {% extends "base.html" %}
-{% block titulo %}Relatório — {{ relatorio.dia }}{% endblock %}
+{% block titulo %}Relatório · {{ relatorio.dia }}{% endblock %}
+{% block cabecalho %}Relatório do dia{% endblock %}
+{% block subcabecalho %}{{ relatorio.dia }}{% endblock %}
 
 {% macro lista(itens) %}
   {% if itens %}
     {% for i in itens %}
       <div class="item">
-        <span class="urg-{{ i.urgencia }}">[{{ i.urgencia }}]</span> {{ i.resumo }}
-        <div class="meta">
-          {{ i.grupo_nome or "grupo" }}
-          {% if i.remetente %}· {{ i.remetente }}{% endif %}
-          · {{ i.enviada_em.strftime("%d/%m %H:%M") }}
+        <span class="badge u-{{ i.urgencia }}">{{ i.urgencia }}</span>
+        <div class="body">
+          <div class="txt">{{ i.resumo }}</div>
+          <div class="meta">
+            <span>📍 {{ i.grupo_nome or "grupo" }}</span>
+            {% if i.remetente %}<span>· {{ i.remetente }}</span>{% endif %}
+            <span>· {{ i.enviada_em.strftime("%d/%m %H:%M") }}</span>
+          </div>
         </div>
       </div>
     {% endfor %}
   {% else %}
-    <div class="vazio">Nada nesta categoria.</div>
+    <div class="empty">Nada nesta categoria.</div>
   {% endif %}
 {% endmacro %}
 
 {% block conteudo %}
-  <div class="card">
-    <h1>Relatório diário — {{ relatorio.dia }}</h1>
-    <form method="get" action="/" class="inline">
+  <div class="stats">
+    <div class="stat accent"><div class="n">{{ relatorio.total }}</div><div class="l">Itens do dia</div></div>
+    <div class="stat crit"><div class="n">{{ relatorio.criticos|length }}</div><div class="l">Críticos / urgentes</div></div>
+    <div class="stat"><div class="n">{{ relatorio.pendencias|length }}</div><div class="l">Pendências</div></div>
+    <div class="stat"><div class="n">{{ relatorio.duvidas|length + relatorio.decisoes|length }}</div><div class="l">Dúvidas + decisões</div></div>
+  </div>
+
+  <div class="card pad" style="margin-bottom:18px">
+    <form method="get" action="/" class="toolbar">
       <input type="date" name="data" value="{{ relatorio.dia }}">
       <select name="grupo_id">
         <option value="">Todos os grupos</option>
         {% for g in grupos %}
-          <option value="{{ g.id }}" {% if grupo_id == g.id %}selected{% endif %}>
-            {{ g.nome or g.wa_jid }}
-          </option>
+          <option value="{{ g.id }}" {% if grupo_id == g.id %}selected{% endif %}>{{ g.nome or g.wa_jid }}</option>
         {% endfor %}
       </select>
-      <button type="submit">Ver</button>
+      <button class="btn" type="submit">Ver</button>
     </form>
-    <p class="meta">{{ relatorio.total }} item(ns) · {{ relatorio.criticos|length }} crítico(s)/urgente(s)</p>
   </div>
 
-  <div class="card"><h2>⚠️ Pendências ({{ relatorio.pendencias|length }})</h2>{{ lista(relatorio.pendencias) }}</div>
-  <div class="card"><h2>❓ Dúvidas ({{ relatorio.duvidas|length }})</h2>{{ lista(relatorio.duvidas) }}</div>
-  <div class="card"><h2>✅ Decisões ({{ relatorio.decisoes|length }})</h2>{{ lista(relatorio.decisoes) }}</div>
+  <div class="card pad">
+    <div class="section-title">⚠️ Pendências <span class="count">{{ relatorio.pendencias|length }}</span></div>
+    {{ lista(relatorio.pendencias) }}
+  </div>
+  <div class="card pad">
+    <div class="section-title">❓ Dúvidas <span class="count">{{ relatorio.duvidas|length }}</span></div>
+    {{ lista(relatorio.duvidas) }}
+  </div>
+  <div class="card pad">
+    <div class="section-title">✅ Decisões <span class="count">{{ relatorio.decisoes|length }}</span></div>
+    {{ lista(relatorio.decisoes) }}
+  </div>
 {% endblock %}

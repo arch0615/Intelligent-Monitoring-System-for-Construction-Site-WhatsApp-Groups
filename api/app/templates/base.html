@@ -3,37 +3,168 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Monitoramento de Obras{% endblock %}</title>
+  <title>{% block titulo %}Monreal · Obras{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#f7f7f5; --card:#fff; --line:#e3e3df; --ink:#23231f; --muted:#76766f; }
+    :root {
+      --bg: #eef0f4;
+      --surface: #ffffff;
+      --ink: #1b1f27;
+      --muted: #6b7280;
+      --line: #e4e7ec;
+      --sidebar: #1a1d24;
+      --sidebar-ink: #c7ccd6;
+      --sidebar-active: #2a2e38;
+      --accent: #ef7a3d;        /* âmbar construção */
+      --accent-soft: #fff1e9;
+      --crit: #dc2626; --crit-bg:#fdecec;
+      --alta: #ea580c; --alta-bg:#fdeee3;
+      --media:#b7791f; --media-bg:#fdf6e3;
+      --baixa:#64748b; --baixa-bg:#eef1f5;
+      --green:#16a34a; --green-bg:#e9f7ee;
+      --radius: 12px;
+      --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.05);
+    }
     * { box-sizing: border-box; }
-    body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
-    header { background:var(--card); border-bottom:1px solid var(--line); padding:14px 22px; }
-    header nav a { margin-right:18px; text-decoration:none; color:var(--ink); font-weight:600; }
-    header nav a:hover { color:#0a7; }
-    main { max-width:920px; margin:24px auto; padding:0 18px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:16px; }
-    h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:16px; margin:18px 0 8px; }
-    .item { padding:8px 0; border-bottom:1px dashed var(--line); }
-    .item:last-child { border-bottom:0; }
-    .meta { color:var(--muted); font-size:13px; }
-    .urg-critica { color:#c0392b; font-weight:700; } .urg-alta { color:#d35400; font-weight:600; }
-    .urg-media { color:#b7950b; } .urg-baixa { color:var(--muted); }
-    input, select, button { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:7px; }
-    button { background:#0a7; color:#fff; border:0; cursor:pointer; }
-    .vazio { color:var(--muted); font-style:italic; }
-    form.inline { display:inline; }
+    html, body { margin: 0; }
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ---------- layout ---------- */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 248px; background: var(--sidebar); color: var(--sidebar-ink);
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+      flex-shrink: 0;
+    }
+    .brand { padding: 22px 22px 18px; display: flex; align-items: center; gap: 11px; }
+    .brand .logo {
+      width: 36px; height: 36px; border-radius: 9px; background: var(--accent);
+      display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 18px;
+      flex-shrink: 0;
+    }
+    .brand b { color: #fff; font-weight: 800; font-size: 15px; display: block; line-height: 1.2; }
+    .brand span { font-size: 12px; color: #8b91a0; }
+    nav.menu { padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+    nav.menu a {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px;
+      color: var(--sidebar-ink); font-weight: 600; font-size: 14px; transition: .15s;
+    }
+    nav.menu a svg { width: 18px; height: 18px; opacity: .85; flex-shrink: 0; }
+    nav.menu a:hover { background: var(--sidebar-active); color: #fff; }
+    nav.menu a.active { background: var(--sidebar-active); color: #fff; }
+    nav.menu a.active svg { color: var(--accent); opacity: 1; }
+    .sidebar-foot { margin-top: auto; padding: 16px 22px; font-size: 11.5px; color: #6b7280; border-top: 1px solid #262a33; }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      height: 64px; background: var(--surface); border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; position: sticky; top: 0; z-index: 5;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 700; margin: 0; }
+    .topbar .sub { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .content { padding: 26px 28px 40px; max-width: 1080px; width: 100%; }
+
+    /* ---------- componentes ---------- */
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card.pad { padding: 18px 20px; }
+    .card + .card, .stack > * + * { margin-top: 16px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+    .stat .n { font-size: 28px; font-weight: 800; line-height: 1; }
+    .stat .l { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 7px; text-transform: uppercase; letter-spacing: .03em; }
+    .stat.accent { border-left: 3px solid var(--accent); }
+    .stat.crit  .n { color: var(--crit); }
+
+    .section-title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+    .section-title .count { color: var(--muted); font-weight: 600; font-size: 13px; }
+
+    .item { padding: 13px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+    .item:last-child { border-bottom: 0; padding-bottom: 2px; }
+    .item .body { flex: 1; min-width: 0; }
+    .item .body .txt { font-weight: 500; }
+    .item .meta { color: var(--muted); font-size: 12.5px; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+    .badge::before { content:""; width:6px; height:6px; border-radius:50%; background: currentColor; }
+    .u-critica { color: var(--crit); background: var(--crit-bg); }
+    .u-alta    { color: var(--alta); background: var(--alta-bg); }
+    .u-media   { color: var(--media); background: var(--media-bg); }
+    .u-baixa   { color: var(--baixa); background: var(--baixa-bg); }
+
+    .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+
+    /* filtros / forms */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    input[type=date], input[type=text], select {
+      font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink);
+    }
+    input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+    .btn { font: inherit; font-weight: 600; padding: 9px 16px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; cursor: pointer; transition: .15s; }
+    .btn:hover { filter: brightness(.95); }
+    .btn.ghost { background: #f3f4f6; color: var(--ink); border: 1px solid var(--line); }
+    .search { display: flex; gap: 10px; }
+    .search input[type=text] { flex: 1; }
+
+    /* pílulas de status (saúde) */
+    .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 12.5px; }
+    .pill::before { content:""; width:8px; height:8px; border-radius:50%; background: currentColor; }
+    .ok { color: var(--green); background: var(--green-bg); }
+    .down { color: var(--crit); background: var(--crit-bg); }
+
+    @media (max-width: 760px) {
+      .app { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; overflow-x: auto; }
+      .brand { padding: 12px 16px; } .brand span, .sidebar-foot { display: none; }
+      nav.menu { flex-direction: row; padding: 8px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 18px 16px 32px; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <a href="/">Relatório do dia</a>
-      <a href="/historico">Histórico</a>
-      <a href="/grupos">Grupos</a>
-      <a href="/saude">Saúde</a>
-    </nav>
-  </header>
-  <main>{% block conteudo %}{% endblock %}</main>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">M</div>
+        <div><b>Monreal</b><span>Monitor de Obras</span></div>
+      </div>
+      {% set p = request.url.path %}
+      <nav class="menu">
+        <a href="/" class="{{ 'active' if p == '/' or p.startswith('/relatorio') else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+          Relatório do dia
+        </a>
+        <a href="/historico" class="{{ 'active' if p.startswith('/historico') else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>
+          Histórico
+        </a>
+        <a href="/grupos" class="{{ 'active' if p.startswith('/grupos') else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M21 19a5 5 0 0 0-3.5-4.8"/></svg>
+          Grupos
+        </a>
+        <a href="/saude" class="{{ 'active' if p.startswith('/saude') else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+          Saúde
+        </a>
+      </nav>
+      <div class="sidebar-foot">Sistema de monitoramento inteligente de grupos de WhatsApp</div>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <h1>{% block cabecalho %}{% endblock %}</h1>
+        <div class="sub">{% block subcabecalho %}{% endblock %}</div>
+      </header>
+      <div class="content">{% block conteudo %}{% endblock %}</div>
+    </div>
+  </div>
 </body>
 </html>

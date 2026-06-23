@@ -1,40 +1,37 @@
 {% extends "base.html" %}
-{% block titulo %}Saúde do sistema{% endblock %}
+{% block titulo %}Saúde{% endblock %}
+{% block cabecalho %}Saúde do sistema{% endblock %}
+{% block subcabecalho %}Atualize a página para checar novamente · heartbeats expiram em 90s{% endblock %}
 
-{% macro selo(ok) %}
-  <span class="{{ 'urg-baixa' if ok else 'urg-critica' }}">{{ "● OK" if ok else "✕ FALHA" }}</span>
+{% macro linha(nome, ok, detalhe) %}
+  <div class="item" style="align-items:center">
+    <div class="body">
+      <div class="txt">{{ nome }}</div>
+      {% if detalhe %}<div class="meta"><span>{{ detalhe }}</span></div>{% endif %}
+    </div>
+    <span class="pill {{ 'ok' if ok else 'down' }}">{{ "OK" if ok else "Fora" }}</span>
+  </div>
 {% endmacro %}
 
 {% block conteudo %}
-  <div class="card">
-    <h1>Saúde do sistema
-      <span class="{{ 'urg-baixa' if saude.status == 'ok' else 'urg-critica' }}">
-        — {{ saude.status }}
-      </span>
-    </h1>
-    <p class="meta">Atualize a página para checar de novo. Heartbeats expiram em 90s.</p>
+  <div class="stats" style="grid-template-columns:1fr">
+    <div class="stat {{ 'accent' if saude.status == 'ok' else 'crit' }}">
+      <div class="n" style="text-transform:capitalize">{{ saude.status }}</div>
+      <div class="l">Estado geral do sistema</div>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="item"><strong>PostgreSQL</strong> {{ selo(saude.postgres.ok) }}
-      {% if saude.postgres.erro %}<div class="meta">{{ saude.postgres.erro }}</div>{% endif %}
-    </div>
-    <div class="item"><strong>Redis</strong> {{ selo(saude.redis.ok) }}
-      {% if saude.redis.erro %}<div class="meta">{{ saude.redis.erro }}</div>{% endif %}
-    </div>
-    <div class="item"><strong>Worker de captura</strong> {{ selo(saude.captura.vivo) }}
-      <div class="meta">
-        {% if saude.captura.ha_segundos is not none %}
-          último heartbeat há {{ saude.captura.ha_segundos }}s
-        {% else %}sem heartbeat{% endif %}
-      </div>
-    </div>
-    <div class="item"><strong>Pipeline de processamento</strong> {{ selo(saude.pipeline.vivo) }}
-      <div class="meta">
-        {% if saude.pipeline.ha_segundos is not none %}
-          último heartbeat há {{ saude.pipeline.ha_segundos }}s
-        {% else %}sem heartbeat{% endif %}
-      </div>
-    </div>
+  <div class="card pad">
+    <div class="section-title">Componentes</div>
+    {{ linha("PostgreSQL (banco de dados)", saude.postgres.ok, saude.postgres.erro) }}
+    {{ linha("Redis (fila de eventos)", saude.redis.ok, saude.redis.erro) }}
+    {{ linha(
+        "Worker de captura (WhatsApp)",
+        saude.captura.vivo,
+        ("último heartbeat há " ~ saude.captura.ha_segundos ~ "s") if saude.captura.ha_segundos is not none else "sem heartbeat") }}
+    {{ linha(
+        "Pipeline de processamento",
+        saude.pipeline.vivo,
+        ("último heartbeat há " ~ saude.pipeline.ha_segundos ~ "s") if saude.pipeline.ha_segundos is not none else "sem heartbeat") }}
   </div>
 {% endblock %}

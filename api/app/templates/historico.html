@@ -1,32 +1,35 @@
 {% extends "base.html" %}
-{% block titulo %}Consulta de histórico{% endblock %}
+{% block titulo %}Histórico{% endblock %}
+{% block cabecalho %}Consulta de histórico{% endblock %}
+{% block subcabecalho %}Busca no conteúdo de mensagens, transcrições e documentos{% endblock %}
 
 {% block conteudo %}
-  <div class="card">
-    <h1>Consulta de histórico</h1>
-    <p class="meta">Busca no conteúdo das mensagens (texto, transcrições e documentos).</p>
-    <form method="get" action="/historico">
-      <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento 3º andar, medição, prazo..." size="40" autofocus>
-      <button type="submit">Buscar</button>
+  <div class="card pad" style="margin-bottom:18px">
+    <form method="get" action="/historico" class="search">
+      <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento, medição, prazo, andaime..." autofocus>
+      <button class="btn" type="submit">Buscar</button>
     </form>
   </div>
 
   {% if q %}
-    <div class="card">
-      <h2>{{ resultados|length }} resultado(s) para “{{ q }}”</h2>
+    <div class="card pad">
+      <div class="section-title">Resultados <span class="count">{{ resultados|length }} para “{{ q }}”</span></div>
       {% if resultados %}
         {% for r in resultados %}
           <div class="item">
-            {{ r.texto or "(sem texto)" }}
-            <div class="meta">
-              {{ r.grupo_nome or "grupo" }}
-              {% if r.remetente %}· {{ r.remetente }}{% endif %}
-              · {{ r.tipo }} · {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}
+            <div class="body">
+              <div class="txt">{{ r.texto or "(sem texto)" }}</div>
+              <div class="meta">
+                <span>📍 {{ r.grupo_nome or "grupo" }}</span>
+                {% if r.remetente %}<span>· {{ r.remetente }}</span>{% endif %}
+                <span>· {{ r.tipo }}</span>
+                <span>· {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}</span>
+              </div>
             </div>
           </div>
         {% endfor %}
       {% else %}
-        <div class="vazio">Nenhum registro encontrado.</div>
+        <div class="empty">Nenhum registro encontrado.</div>
       {% endif %}
     </div>
   {% endif %}
