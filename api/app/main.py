@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 
 from fastapi import FastAPI, Form, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from . import db, health, maintenance, reports, scheduler
@@ -104,6 +104,22 @@ def api_enviar_relatorio(data: str | None = None, grupo_id: int | None = None):
 def api_retencao():
     """Dispara a retenção de mídia agora (uso manual/operacional)."""
     return {"arquivadas": maintenance.arquivar_midia_antiga()}
+
+
+# Favicon — marca "M" em quadrado azul arredondado (igual ao logo do painel).
+FAVICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    '<rect width="32" height="32" rx="7" fill="#3b82f6"/>'
+    '<text x="16" y="23" text-anchor="middle" '
+    'font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="bold" '
+    'fill="#ffffff">M</text></svg>'
+)
+
+
+@app.get("/favicon.svg")
+@app.get("/favicon.ico")
+def favicon():
+    return Response(content=FAVICON_SVG, media_type="image/svg+xml")
 
 
 @app.get("/health")
