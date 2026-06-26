@@ -41,20 +41,32 @@ def _parse_data(data: str | None) -> date:
     return date.fromisoformat(data) if data else date.today()
 
 
+def _parse_grupo_id(grupo_id: str | None) -> int | None:
+    """Converte o grupo_id da query em int. Vazio ('Todos os grupos') ou
+    valor inválido -> None (mostra todos os grupos, sem quebrar a página)."""
+    if not grupo_id or not grupo_id.strip():
+        return None
+    try:
+        return int(grupo_id)
+    except ValueError:
+        return None
+
+
 # ----------------------------- Painel (HTML) -----------------------------
 @app.get("/", response_class=HTMLResponse)
-def painel(request: Request, data: str | None = None, grupo_id: int | None = None):
+def painel(request: Request, data: str | None = None, grupo_id: str | None = None):
     dia = _parse_data(data)
-    relatorio = db.relatorio_do_dia(dia, grupo_id)
+    gid = _parse_grupo_id(grupo_id)
+    relatorio = db.relatorio_do_dia(dia, gid)
     return templates.TemplateResponse(
         request,
         "relatorio.html",
-        {"relatorio": relatorio, "grupos": db.listar_grupos(), "grupo_id": grupo_id},
+        {"relatorio": relatorio, "grupos": db.listar_grupos(), "grupo_id": gid},
     )
 
 
 @app.get("/relatorio", response_class=HTMLResponse)
-def relatorio_html(request: Request, data: str | None = None, grupo_id: int | None = None):
+def relatorio_html(request: Request, data: str | None = None, grupo_id: str | None = None):
     return painel(request, data, grupo_id)
 
 
@@ -84,8 +96,8 @@ def grupos_toggle(grupo_id: int, ativo: bool = Form(...)):
 
 # ----------------------------- API (JSON) --------------------------------
 @app.get("/api/relatorio")
-def api_relatorio(data: str | None = None, grupo_id: int | None = None):
-    return db.relatorio_do_dia(_parse_data(data), grupo_id)
+def api_relatorio(data: str | None = None, grupo_id: str | None = None):
+    return db.relatorio_do_dia(_parse_data(data), _parse_grupo_id(grupo_id))
 
 
 @app.get("/api/historico")
@@ -94,9 +106,9 @@ def api_historico(q: str = Query(...), limite: int = 50):
 
 
 @app.post("/api/relatorio/enviar")
-def api_enviar_relatorio(data: str | None = None, grupo_id: int | None = None):
+def api_enviar_relatorio(data: str | None = None, grupo_id: str | None = None):
     """Gera e entrega o relatório agora (útil para teste / DEMO da Etapa 3)."""
-    resultado = reports.gerar_e_entregar(_parse_data(data) if data else None, grupo_id)
+    resultado = reports.gerar_e_entregar(_parse_data(data) if data else None, _parse_grupo_id(grupo_id))
     return {"entregue": resultado["entregue"], "total": resultado["relatorio"]["total"]}
 
 
