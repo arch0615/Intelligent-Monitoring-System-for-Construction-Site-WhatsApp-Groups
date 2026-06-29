@@ -105,6 +105,16 @@
 
     .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
 
+    /* dashboard: grade + barras */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bars { display: flex; flex-direction: column; gap: 11px; margin-top: 8px; }
+    .bar-row { display: grid; grid-template-columns: 104px 1fr 38px; align-items: center; gap: 12px; font-size: 13.5px; }
+    .bar-track { background: rgba(255,255,255,.07); border-radius: 6px; height: 9px; overflow: hidden; }
+    .bar-fill { display: block; height: 100%; border-radius: 6px; background: var(--accent); min-width: 3px; }
+    .bar-fill.f-critica { background: var(--crit); } .bar-fill.f-alta { background: var(--alta); }
+    .bar-fill.f-media { background: var(--media); } .bar-fill.f-baixa { background: var(--baixa); }
+    .bar-row .num { text-align: right; color: var(--muted); font-weight: 700; }
+
     /* filtros / forms */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     input[type=date], input[type=text], select {
@@ -150,6 +160,8 @@
       .content { padding: 16px 14px 30px; }
       .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .stat .n { font-size: 24px; }
+      .grid2 { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 92px 1fr 34px; }
       /* linhas com controles (grupos/saúde) quebram em telas estreitas */
       .item { flex-wrap: wrap; }
       .toolbar, .search { width: 100%; }
@@ -169,6 +181,10 @@
       </div>
       {% set p = request.url.path %}
       <nav class="menu">
+        <a href="/dashboard" class="{{ 'active' if p.startswith('/dashboard') else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </a>
         <a href="/" class="{{ 'active' if p == '/' or p.startswith('/relatorio') else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
           Relatório do dia

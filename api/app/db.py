@@ -91,3 +91,61 @@ def buscar_historico(consulta: str, limite: int = 50) -> list[dict[str, Any]]:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(sql, (consulta, consulta, limite))
         return cur.fetchall()
+
+
+def estatisticas() -> dict[str, Any]:
+    """Métricas agregadas para o dashboard (sobre todo o histórico)."""
+    ordem_cat = ["pendencia", "duvida", "decisao"]
+    ordem_urg = ["critica", "alta", "media", "baixa"]
+    ordem_tipo = ["texto", "audio", "imagem", "video", "documento", "outro"]
+
+    def com_pct(pares: list[tuple[str, int]]) -> list[dict[str, Any]]:
+        mx = max((n for _, n in pares), default=0) or 1
+        return [{"label": l, "n": n, "pct": round(n * 100 / mx)} for l, n in pares]
+
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) n FROM mensagens")
+        total_msgs = cur.fetchone()["n"]
+        cur.execute("SELECT count(*) n FROM analises")
+        total_an = cur.fetchone()["n"]
+        cur.execute("SELECT count(*) n FROM analises WHERE urgencia IN ('critica','alta')")
+        criticos = cur.fetchone()["n"]
+        cur.execute("SELECT count(*) FILTER (WHERE is_active) ativos, count(*) total FROM grupos")
+        g = cur.fetchone()
+
+        cur.execute("SELECT categoria, count(*) n FROM analises GROUP BY categoria")
+        cat = {r["categoria"]: r["n"] for r in cur.fetchall()}
+        cur.execute("SELECT urgencia, count(*) n FROM analises GROUP BY urgencia")
+        urg = {r["urgencia"]: r["n"] for r in cur.fetchall()}
+        cur.execute("SELECT tipo, count(*) n FROM mensagens GROUP BY tipo")
+        tip = {r["tipo"]: r["n"] for r in cur.fetchall()}
+
+        dias = [date.today() - timedelta(days=i) for i in range(6, -1, -1)]
+        cur.execute(
+            "SELECT enviada_em::date d, count(*) n FROM mensagens WHERE enviada_em::date >= %s GROUP BY d",
+            (dias[0],),
+        )
+        md = {r["d"]: r["n"] for r in cur.fetchall()}
+        atividade = com_pct([(d.strftime("%d/%m"), md.get(d, 0)) for d in dias])
+
+        cur.execute(
+            """SELECT coalesce(g.nome, g.wa_jid) nome, count(*) n
+               FROM analises a
+               JOIN mensagens m ON m.id = a.mensagem_id
+               JOIN grupos g    ON g.id = m.grupo_id
+               GROUP BY 1 ORDER BY 2 DESC LIMIT 8"""
+        )
+        por_grupo = com_pct([(r["nome"], r["n"]) for r in cur.fetchall()])
+
+    return {
+        "total_mensagens": total_msgs,
+        "total_analises": total_an,
+        "criticos": criticos,
+        "grupos_ativos": g["ativos"],
+        "grupos_total": g["total"],
+        "categoria": com_pct([(c, cat.get(c, 0)) for c in ordem_cat]),
+        "urgencia": com_pct([(u, urg.get(u, 0)) for u in ordem_urg]),
+        "tipo": com_pct([(t, tip.get(t, 0)) for t in ordem_tipo]),
+        "atividade": atividade,
+        "por_grupo": por_grupo,
+    }

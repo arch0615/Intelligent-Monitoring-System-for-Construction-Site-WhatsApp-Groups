@@ -53,6 +53,11 @@ def _parse_grupo_id(grupo_id: str | None) -> int | None:
 
 
 # ----------------------------- Painel (HTML) -----------------------------
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    return templates.TemplateResponse(request, "dashboard.html", {"est": db.estatisticas()})
+
+
 @app.get("/", response_class=HTMLResponse)
 def painel(request: Request, data: str | None = None, grupo_id: str | None = None):
     dia = _parse_data(data)
@@ -103,6 +108,11 @@ def api_relatorio(data: str | None = None, grupo_id: str | None = None):
 @app.get("/api/historico")
 def api_historico(q: str = Query(...), limite: int = 50):
     return {"q": q, "resultados": db.buscar_historico(q, limite)}
+
+
+@app.get("/api/estatisticas")
+def api_estatisticas():
+    return db.estatisticas()
 
 
 @app.post("/api/relatorio/enviar")

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block titulo %}Dashboard{% endblock %}
+{% block cabecalho %}Dashboard{% endblock %}
+{% block subcabecalho %}Visão geral de todo o histórico{% endblock %}
+
+{% set rot_cat = {"pendencia": "Pendências", "duvida": "Dúvidas", "decisao": "Decisões"} %}
+{% set rot_urg = {"critica": "Crítica", "alta": "Alta", "media": "Média", "baixa": "Baixa"} %}
+{% set rot_tipo = {"texto": "Texto", "audio": "Áudio", "imagem": "Imagem", "video": "Vídeo", "documento": "Documento", "outro": "Outro"} %}
+
+{% macro barras(itens, rotulos=None, classe_urg=false) %}
+  <div class="bars">
+    {% for r in itens %}
+      <div class="bar-row">
+        <span>{{ (rotulos[r.label] if rotulos else r.label) }}</span>
+        <span class="bar-track"><span class="bar-fill {{ ('f-' ~ r.label) if classe_urg else '' }}" style="width: {{ r.pct if r.n else 0 }}%"></span></span>
+        <span class="num">{{ r.n }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% block conteudo %}
+  <div class="stats">
+    <div class="stat accent"><div class="n">{{ est.total_mensagens }}</div><div class="l">Mensagens capturadas</div></div>
+    <div class="stat"><div class="n">{{ est.total_analises }}</div><div class="l">Itens analisados</div></div>
+    <div class="stat crit"><div class="n">{{ est.criticos }}</div><div class="l">Críticos / urgentes</div></div>
+    <div class="stat"><div class="n">{{ est.grupos_ativos }}<span style="font-size:16px;color:var(--muted)">/{{ est.grupos_total }}</span></div><div class="l">Grupos ativos</div></div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card pad">
+      <div class="section-title">Por categoria</div>
+      {{ barras(est.categoria, rot_cat) }}
+    </div>
+    <div class="card pad">
+      <div class="section-title">Por urgência</div>
+      {{ barras(est.urgencia, rot_urg, classe_urg=true) }}
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card pad">
+      <div class="section-title">Por tipo de mídia</div>
+      {{ barras(est.tipo, rot_tipo) }}
+    </div>
+    <div class="card pad">
+      <div class="section-title">Atividade <span class="count">últimos 7 dias</span></div>
+      {{ barras(est.atividade) }}
+    </div>
+  </div>
+
+  <div class="card pad">
+    <div class="section-title">Itens por grupo <span class="count">top 8</span></div>
+    {% if est.por_grupo %}
+      {{ barras(est.por_grupo) }}
+    {% else %}
+      <div class="empty">Sem dados ainda.</div>
+    {% endif %}
+  </div>
+{% endblock %}
