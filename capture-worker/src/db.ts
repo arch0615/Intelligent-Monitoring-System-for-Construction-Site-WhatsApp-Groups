@@ -124,6 +124,16 @@ export async function salvarMensagem(
   }
 }
 
+/** Define/atualiza o nome (assunto) de um grupo. Mantém o nome em dia mesmo
+ *  quando o grupo é renomeado no WhatsApp. */
+export async function atualizarNomeGrupo(jid: string, nome: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO grupos (wa_jid, nome) VALUES ($1, $2)
+       ON CONFLICT (wa_jid) DO UPDATE SET nome = EXCLUDED.nome`,
+    [jid, nome],
+  );
+}
+
 /** Retorna o conjunto de wa_jid de grupos ativos (RF-08). A captura ignora
  *  mensagens de grupos que não estejam ativos no painel. */
 export async function gruposAtivos(): Promise<Set<string>> {

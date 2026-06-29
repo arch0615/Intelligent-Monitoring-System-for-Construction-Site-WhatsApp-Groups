@@ -12,7 +12,12 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { config } from "./config.js";
 import { logger } from "./logger.js";
-import { salvarMensagem, type MensagemNormalizada, type MidiaNormalizada } from "./db.js";
+import {
+  salvarMensagem,
+  atualizarNomeGrupo,
+  type MensagemNormalizada,
+  type MidiaNormalizada,
+} from "./db.js";
 import { publicarEvento } from "./redis.js";
 import { notificarBloqueio } from "./alerts.js";
 
@@ -122,6 +127,24 @@ async function processarMensagem(msg: WAMessage): Promise<void> {
   logger.info({ mensagemId, tipo, grupo: jid }, "Mensagem capturada");
 }
 
+/** Busca o assunto (nome) de todos os grupos participantes e atualiza no banco.
+ *  Roda ao conectar, para preencher os nomes dos grupos já existentes. */
+async function sincronizarNomesGrupos(sock: WASocket): Promise<void> {
+  try {
+    const grupos = await sock.groupFetchAllParticipating();
+    let n = 0;
+    for (const [jid, meta] of Object.entries(grupos)) {
+      if (meta.subject) {
+        await atualizarNomeGrupo(jid, meta.subject);
+        n++;
+      }
+    }
+    logger.info(`Nomes de ${n} grupo(s) sincronizados`);
+  } catch (err) {
+    logger.error({ err }, "Falha ao sincronizar nomes de grupos");
+  }
+}
+
 /** Inicia o socket Baileys com reconexão automática. */
 export async function iniciarCaptura(): Promise<void> {
   const { state, saveCreds } = await useMultiFileAuthState(config.whatsapp.authDir);
@@ -165,6 +188,31 @@ export async function iniciarCaptura(): Promise<void> {
       }
     } else if (connection === "open") {
       logger.info("Conexão estabelecida — capturando em tempo real");
+      void sincronizarNomesGrupos(sock); // backfill dos nomes dos grupos
+    }
+  });
+
+  // Mantém os nomes dos grupos em dia: criação e renomeação.
+  sock.ev.on("groups.upsert", async (grupos) => {
+    for (const g of grupos) {
+      if (g.id && g.subject) {
+        try {
+          await atualizarNomeGrupo(g.id, g.subject);
+        } catch (err) {
+          logger.error({ err }, "Falha ao salvar nome de grupo (upsert)");
+        }
+      }
+    }
+  });
+  sock.ev.on("groups.update", async (updates) => {
+    for (const u of updates) {
+      if (u.id && u.subject) {
+        try {
+          await atualizarNomeGrupo(u.id, u.subject);
+        } catch (err) {
+          logger.error({ err }, "Falha ao atualizar nome de grupo (update)");
+        }
+      }
     }
   });
 
