@@ -115,6 +115,33 @@
     .bar-fill.f-media { background: var(--media); } .bar-fill.f-baixa { background: var(--baixa); }
     .bar-row .num { text-align: right; color: var(--muted); font-weight: 700; }
 
+    /* dashboard: gráficos variados */
+    .chart-flex { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 6px; }
+    .donut-box { position: relative; width: 144px; height: 144px; flex-shrink: 0; }
+    .donut { width: 144px; height: 144px; border-radius: 50%;
+      -webkit-mask: radial-gradient(transparent 56%, #000 57%); mask: radial-gradient(transparent 56%, #000 57%); }
+    .donut-tot { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .donut-tot b { font-size: 26px; font-weight: 800; line-height: 1; }
+    .donut-tot span { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .legend { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; flex: 1; min-width: 140px; }
+    .legend li { display: flex; align-items: center; gap: 9px; }
+    .legend .dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .legend b { margin-left: auto; font-weight: 700; }
+
+    .cols { display: flex; align-items: flex-end; gap: 12px; height: 158px; margin-top: 10px; }
+    .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 9px; }
+    .col .cbar { width: 62%; max-width: 44px; border-radius: 7px 7px 0 0; transition: height .4s ease; }
+    .col .clbl { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.35; }
+    .col .clbl b { color: var(--ink); font-size: 14px; }
+    .cbar.f-critica { background: var(--crit); } .cbar.f-alta { background: var(--alta); }
+    .cbar.f-media { background: var(--media); } .cbar.f-baixa { background: var(--baixa); }
+
+    .stacked { display: flex; height: 18px; border-radius: 9px; overflow: hidden; margin-top: 12px; background: rgba(255,255,255,.06); }
+    .stacked .seg { height: 100%; min-width: 2px; }
+
+    .area { width: 100%; height: 132px; display: block; margin-top: 8px; }
+    .xlabels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+
     /* filtros / forms */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     input[type=date], input[type=text], select {
