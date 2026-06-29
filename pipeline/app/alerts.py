@@ -9,6 +9,8 @@ somente leitura — enviar por ele aumentaria o risco de bloqueio.
 """
 from __future__ import annotations
 
+import html
+
 import httpx
 
 from . import db
@@ -18,6 +20,10 @@ _EMOJI = {"critica": "🔴", "alta": "🟠"}
 _ROTULO = {"pendencia": "Pendência", "duvida": "Dúvida", "decisao": "Decisão"}
 
 
+def _esc(texto: str | None) -> str:
+    return html.escape(texto or "")
+
+
 def _enviar_telegram(texto: str) -> tuple[bool, str | None]:
     if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
         return False, "telegram_nao_configurado"
@@ -25,7 +31,7 @@ def _enviar_telegram(texto: str) -> tuple[bool, str | None]:
     try:
         resp = httpx.post(
             url,
-            json={"chat_id": config.TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"},
+            json={"chat_id": config.TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "HTML"},
             timeout=15,
         )
         resp.raise_for_status()
@@ -41,9 +47,9 @@ def _formatar(item: dict) -> str:
     grupo = item.get("grupo_nome") or "grupo"
     quem = f" · {item['remetente']}" if item.get("remetente") else ""
     return (
-        f"{emoji} *ALERTA — {item['urgencia'].upper()}*\n"
-        f"{rotulo}: {item['resumo']}\n"
-        f"_{grupo}{quem}_"
+        f"{emoji} <b>ALERTA — {item['urgencia'].upper()}</b>\n"
+        f"{_esc(rotulo)}: {_esc(item['resumo'])}\n"
+        f"<i>{_esc(grupo)}{_esc(quem)}</i>"
     )
 
 
