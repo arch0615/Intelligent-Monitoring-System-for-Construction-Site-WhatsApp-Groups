@@ -93,6 +93,24 @@ def buscar_historico(consulta: str, limite: int = 50) -> list[dict[str, Any]]:
         return cur.fetchall()
 
 
+def historico_recente(limite: int = 50) -> list[dict[str, Any]]:
+    """Mensagens mais recentes com texto — exibidas no histórico quando não há
+    busca, para a tela não ficar em branco."""
+    sql = """
+        SELECT m.id, m.texto, m.tipo, m.enviada_em,
+               g.nome AS grupo_nome, r.nome_push AS remetente
+        FROM mensagens m
+        JOIN grupos g ON g.id = m.grupo_id
+        LEFT JOIN remetentes r ON r.id = m.remetente_id
+        WHERE m.texto IS NOT NULL AND m.texto <> ''
+        ORDER BY m.enviada_em DESC
+        LIMIT %s
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (limite,))
+        return cur.fetchall()
+
+
 def estatisticas() -> dict[str, Any]:
     """Métricas agregadas para o dashboard (sobre todo o histórico)."""
     ordem_cat = ["pendencia", "duvida", "decisao"]

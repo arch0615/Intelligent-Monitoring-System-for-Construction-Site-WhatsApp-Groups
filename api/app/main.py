@@ -77,7 +77,8 @@ def relatorio_html(request: Request, data: str | None = None, grupo_id: str | No
 
 @app.get("/historico", response_class=HTMLResponse)
 def historico_html(request: Request, q: str = Query("", description="Termo de busca")):
-    resultados = db.buscar_historico(q) if q.strip() else []
+    busca = q.strip()
+    resultados = db.buscar_historico(busca) if busca else db.historico_recente()
     return templates.TemplateResponse(
         request, "historico.html", {"q": q, "resultados": resultados}
     )

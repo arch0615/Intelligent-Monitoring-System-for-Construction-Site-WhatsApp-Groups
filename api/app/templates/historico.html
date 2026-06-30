@@ -11,26 +11,28 @@
     </form>
   </div>
 
-  {% if q %}
-    <div class="card pad">
+  <div class="card pad">
+    {% if q %}
       <div class="section-title">Resultados <span class="count">{{ resultados|length }} para “{{ q }}”</span></div>
-      {% if resultados %}
-        {% for r in resultados %}
-          <div class="item">
-            <div class="body">
-              <div class="txt">{{ r.texto or "(sem texto)" }}</div>
-              <div class="meta">
-                <span>📍 {{ r.grupo_nome or "grupo" }}</span>
-                {% if r.remetente %}<span>· {{ r.remetente }}</span>{% endif %}
-                <span>· {{ r.tipo }}</span>
-                <span>· {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}</span>
-              </div>
+    {% else %}
+      <div class="section-title">Mensagens recentes <span class="count">últimas {{ resultados|length }}</span></div>
+    {% endif %}
+    {% if resultados %}
+      {% for r in resultados %}
+        <div class="item">
+          <div class="body">
+            <div class="txt">{{ r.texto or "(sem texto)" }}</div>
+            <div class="meta">
+              <span>📍 {{ r.grupo_nome or "grupo" }}</span>
+              {% if r.remetente %}<span>· {{ r.remetente }}</span>{% endif %}
+              <span>· {{ r.tipo }}</span>
+              <span>· {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}</span>
             </div>
           </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty">Nenhum registro encontrado.</div>
-      {% endif %}
-    </div>
-  {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">{{ "Nenhum registro encontrado." if q else "Ainda não há mensagens." }}</div>
+    {% endif %}
+  </div>
 {% endblock %}
