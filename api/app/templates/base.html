@@ -107,6 +107,7 @@
 
     /* dashboard: grade + barras */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .bars { display: flex; flex-direction: column; gap: 11px; margin-top: 8px; }
     .bar-row { display: grid; grid-template-columns: 104px 1fr 38px; align-items: center; gap: 12px; font-size: 13.5px; }
     .bar-track { background: rgba(255,255,255,.07); border-radius: 6px; height: 9px; overflow: hidden; }
@@ -188,6 +189,7 @@
       .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .stat .n { font-size: 24px; }
       .grid2 { grid-template-columns: 1fr; }
+      .grid3 { grid-template-columns: 1fr; }
       .bar-row { grid-template-columns: 92px 1fr 34px; }
       /* linhas com controles (grupos/saúde) quebram em telas estreitas */
       .item { flex-wrap: wrap; }

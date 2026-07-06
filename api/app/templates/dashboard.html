@@ -18,7 +18,8 @@
     <div class="stat"><div class="n">{{ est.grupos_ativos }}<span style="font-size:16px;color:var(--muted)">/{{ est.grupos_total }}</span></div><div class="l">Grupos ativos</div></div>
   </div>
 
-  <div class="grid2" style="margin:18px 0 16px">
+  <!-- Linha 1: categoria | urgência | tipo de mídia -->
+  <div class="grid3" style="margin:18px 0 16px">
     <!-- Categoria: DONUT -->
     <div class="card pad">
       <div class="section-title">Por categoria</div>
@@ -60,9 +61,7 @@
         {% endfor %}
       </div>
     </div>
-  </div>
 
-  <div class="grid2" style="margin-bottom:16px">
     <!-- Tipo de mídia: BARRA EMPILHADA 100% -->
     <div class="card pad">
       <div class="section-title">Por tipo de mídia</div>
@@ -79,7 +78,10 @@
         {% endfor %}
       </ul>
     </div>
+  </div>
 
+  <!-- Linha 2: atividade | itens por grupo -->
+  <div class="grid2" style="margin-bottom:16px">
     <!-- Atividade: ÁREA / LINHA -->
     <div class="card pad">
       <div class="section-title">Atividade <span class="count">últimos 7 dias</span></div>
@@ -102,23 +104,23 @@
       </svg>
       <div class="xlabels">{% for r in est.atividade %}<span>{{ r.label }}</span>{% endfor %}</div>
     </div>
-  </div>
 
-  <!-- Por grupo: BARRAS HORIZONTAIS (ranking) -->
-  <div class="card pad">
-    <div class="section-title">Itens por grupo <span class="count">top 8</span></div>
-    {% if est.por_grupo %}
-      <div class="bars">
-        {% for r in est.por_grupo %}
-          <div class="bar-row">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.label }}">{{ r.label }}</span>
-            <span class="bar-track"><span class="bar-fill" style="width: {{ r.pct }}%"></span></span>
-            <span class="num">{{ r.n }}</span>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty">Sem dados ainda.</div>
-    {% endif %}
+    <!-- Por grupo: BARRAS HORIZONTAIS (ranking) -->
+    <div class="card pad">
+      <div class="section-title">Itens por grupo <span class="count">top 8</span></div>
+      {% if est.por_grupo %}
+        <div class="bars">
+          {% for r in est.por_grupo %}
+            <div class="bar-row">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.label }}">{{ r.label }}</span>
+              <span class="bar-track"><span class="bar-fill" style="width: {{ r.pct }}%"></span></span>
+              <span class="num">{{ r.n }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">Sem dados ainda.</div>
+      {% endif %}
+    </div>
   </div>
 {% endblock %}
