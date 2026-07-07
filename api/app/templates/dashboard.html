@@ -121,8 +121,9 @@
     </div>
   </div>
 
-  <!-- Atividade: ÁREA / LINHA (linha inteira) -->
-  <div class="card pad" style="margin-bottom:16px">
+  <!-- Atividade | Itens por grupo -->
+  <div class="grid2">
+    <div class="card pad">
       <div class="section-title"><span class="st-ic tint-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span>Atividade <span class="count">últimos 7 dias</span></div>
       {% set amax = (est.atividade | max(attribute='n')).n or 1 %}
       {% set n = est.atividade | length %}
@@ -160,5 +161,6 @@
       {% else %}
         <div class="empty">Sem dados ainda.</div>
       {% endif %}
+    </div>
   </div>
 {% endblock %}
