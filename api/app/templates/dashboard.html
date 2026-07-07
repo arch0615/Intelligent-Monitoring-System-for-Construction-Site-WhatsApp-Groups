@@ -7,6 +7,7 @@
 {% set rot_urg = {"critica": "Crítica", "alta": "Alta", "media": "Média", "baixa": "Baixa"} %}
 {% set rot_tipo = {"texto": "Texto", "audio": "Áudio", "imagem": "Imagem", "video": "Vídeo", "documento": "Documento", "outro": "Outro"} %}
 {% set cor_cat = {"pendencia": "#fb923c", "duvida": "#38bdf8", "decisao": "#34d399"} %}
+{% set cor_urg = {"critica": "#f87171", "alta": "#fb923c", "media": "#fbbf24", "baixa": "#94a3b8"} %}
 {% set cor_tipo = {"texto": "#60a5fa", "audio": "#a78bfa", "imagem": "#f472b6", "video": "#fb923c", "documento": "#34d399", "outro": "#94a3b8"} %}
 
 {% block conteudo %}
@@ -71,14 +72,27 @@
     <!-- Urgência: COLUNAS -->
     <div class="card pad">
       <div class="section-title"><span class="st-ic tint-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg></span>Por urgência</div>
-      {% set umax = (est.urgencia | max(attribute='n')).n or 1 %}
-      <div class="cols">
-        {% for r in est.urgencia %}
-          <div class="col">
-            <span class="cbar f-{{ r.label }}" style="height: {{ (r.n / umax * 100) if r.n else 1.5 }}%"></span>
-            <span class="clbl">{{ rot_urg[r.label] }}<br><b>{{ r.n }}</b></span>
-          </div>
-        {% endfor %}
+      {% set utot = est.urgencia | sum(attribute='n') %}
+      <div class="chart-flex">
+        <div class="pie-box">
+          {% if utot %}
+            {% set acc = namespace(v=0) %}
+            {% set parts = [] %}
+            {% for r in est.urgencia %}
+              {% set start = acc.v / utot * 100 %}
+              {% set acc.v = acc.v + r.n %}
+              {% set _ = parts.append(cor_urg[r.label] ~ ' ' ~ start ~ '% ' ~ (acc.v / utot * 100) ~ '%') %}
+            {% endfor %}
+            <div class="pie" style="background: conic-gradient({{ parts | join(', ') }})"></div>
+          {% else %}
+            <div class="pie" style="background:rgba(255,255,255,.06)"></div>
+          {% endif %}
+        </div>
+        <ul class="legend">
+          {% for r in est.urgencia %}
+            <li><span class="dot" style="background:{{ cor_urg[r.label] }}"></span> {{ rot_urg[r.label] }} <b>{{ r.n }}</b></li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
 
@@ -87,16 +101,23 @@
       <div class="section-title"><span class="st-ic tint-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.5 6.5"/></svg></span>Por tipo de mídia</div>
       {% set tipos = est.tipo | selectattr('n') | list %}
       {% set ttot = tipos | sum(attribute='n') or 1 %}
-      <div class="stacked">
-        {% for r in tipos %}
-          <span class="seg" style="width: {{ r.n / ttot * 100 }}%; background: {{ cor_tipo[r.label] }}" title="{{ rot_tipo[r.label] }}: {{ r.n }}"></span>
-        {% endfor %}
+      <div class="chart-flex">
+        <svg class="radial" viewBox="0 0 100 100">
+          <g transform="rotate(-90 50 50)">
+            {% for r in tipos %}
+              {% set radius = 44 - loop.index0 * 8.5 %}
+              {% set circ = 6.28318 * radius %}
+              <circle cx="50" cy="50" r="{{ radius }}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="6.5"/>
+              <circle cx="50" cy="50" r="{{ radius }}" fill="none" stroke="{{ cor_tipo[r.label] }}" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="{{ r.n / ttot * circ }} {{ circ }}"/>
+            {% endfor %}
+          </g>
+        </svg>
+        <ul class="legend">
+          {% for r in tipos %}
+            <li><span class="dot" style="background:{{ cor_tipo[r.label] }}"></span> {{ rot_tipo[r.label] }} <b>{{ r.n }} · {{ (r.n / ttot * 100) | round }}%</b></li>
+          {% endfor %}
+        </ul>
       </div>
-      <ul class="legend" style="margin-top:14px; flex-direction:row; flex-wrap:wrap; gap:8px 18px">
-        {% for r in tipos %}
-          <li style="flex:0 0 auto"><span class="dot" style="background:{{ cor_tipo[r.label] }}"></span> {{ rot_tipo[r.label] }} <b style="margin-left:6px">{{ r.n }}</b></li>
-        {% endfor %}
-      </ul>
     </div>
   </div>
 
