@@ -11,6 +11,7 @@ from datetime import date
 import psycopg
 from fastapi import Depends, FastAPI, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Monitoramento de Obras — API", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=config.SESSION_SECRET, max_age=14 * 24 * 3600)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 def _parse_data(data: str | None) -> date:

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a1730"/><stop offset="1" stop-color="#122a53"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="66%" cy="26%" r="62%">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="48" height="48" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="2.4" fill="#4b8bf0"/>
+    </pattern>
+    <pattern id="win" width="28" height="36" patternUnits="userSpaceOnUse">
+      <rect width="28" height="36" fill="#0c1c38"/>
+      <rect x="7" y="8" width="8" height="10" rx="1" fill="#2f74d8" opacity=".5"/>
+    </pattern>
+  </defs>
+  <rect width="900" height="1200" fill="url(#sky)"/>
+  <rect width="900" height="770" fill="url(#dots)" opacity=".13"/>
+  <rect width="900" height="1200" fill="url(#glow)"/>
+  <g>
+    <rect x="-10" y="820" width="150" height="400" fill="url(#win)"/>
+    <rect x="150" y="700" width="130" height="520" fill="url(#win)"/>
+    <rect x="290" y="880" width="120" height="340" fill="url(#win)"/>
+    <rect x="470" y="620" width="150" height="600" fill="url(#win)"/>
+    <rect x="630" y="800" width="120" height="420" fill="url(#win)"/>
+    <rect x="760" y="720" width="160" height="500" fill="url(#win)"/>
+  </g>
+  <g stroke="#5b8fd6" stroke-width="5" fill="none" opacity=".9" stroke-linecap="round">
+    <line x1="540" y1="620" x2="540" y2="250"/>
+    <line x1="360" y1="270" x2="700" y2="270"/>
+    <line x1="540" y1="250" x2="430" y2="270"/>
+    <line x1="540" y1="250" x2="662" y2="270"/>
+    <line x1="620" y1="270" x2="620" y2="360"/>
+  </g>
+  <rect x="606" y="360" width="28" height="16" rx="2" fill="#5b8fd6" opacity=".9"/>
+  <rect x="0" y="1182" width="900" height="18" fill="#0a1526"/>
+</svg>
