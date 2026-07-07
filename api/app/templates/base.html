@@ -96,6 +96,28 @@
     .stat.accent { border-left: 3px solid var(--accent); }
     .stat.crit  .n { color: var(--crit); }
 
+    /* KPI cards coloridos (dashboard) */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
+    .kpi { position: relative; overflow: hidden; border-radius: 14px; padding: 18px 20px; color: #fff; box-shadow: var(--shadow); }
+    .kpi .k-label { font-size: 12.5px; font-weight: 600; opacity: .95; max-width: 78%; }
+    .kpi .k-n { font-size: 31px; font-weight: 800; line-height: 1; margin-top: 14px; }
+    .kpi .k-sub { font-size: 12px; opacity: .88; margin-top: 9px; font-weight: 600; }
+    .kpi .k-ic { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.2); display: grid; place-items: center; }
+    .kpi .k-ic svg { width: 20px; height: 20px; }
+    .kpi.k-green  { background: linear-gradient(135deg, #1fa85c, #128149); }
+    .kpi.k-blue   { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .kpi.k-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .kpi.k-orange { background: linear-gradient(135deg, #f59e0b, #ea580c); }
+
+    /* ícone com fundo tintado nos títulos de seção */
+    .st-ic { width: 30px; height: 30px; border-radius: 9px; display: inline-grid; place-items: center; vertical-align: middle; margin-right: 9px; }
+    .st-ic svg { width: 16px; height: 16px; }
+    .tint-blue { background: rgba(96,165,250,.16); color: #60a5fa; }
+    .tint-orange { background: rgba(251,146,60,.16); color: #fb923c; }
+    .tint-sky { background: rgba(56,189,248,.16); color: #38bdf8; }
+    .tint-green { background: rgba(52,211,153,.16); color: #34d399; }
+    .tint-purple { background: rgba(167,139,250,.16); color: #a78bfa; }
+
     .section-title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; margin: 0 0 2px; }
     .section-title .count { color: var(--muted); font-weight: 600; font-size: 13px; }
 
@@ -196,6 +218,7 @@
       .topbar h1 { font-size: 17px; }
       .content { padding: 16px 14px 30px; }
       .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .stat .n { font-size: 24px; }
       .grid2 { grid-template-columns: 1fr; }
       .grid3 { grid-template-columns: 1fr; }

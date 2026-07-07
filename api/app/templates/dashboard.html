@@ -10,19 +10,39 @@
 {% set cor_tipo = {"texto": "#60a5fa", "audio": "#a78bfa", "imagem": "#f472b6", "video": "#fb923c", "documento": "#34d399", "outro": "#94a3b8"} %}
 
 {% block conteudo %}
-  <!-- KPIs -->
-  <div class="stats">
-    <div class="stat accent"><div class="n">{{ est.total_mensagens }}</div><div class="l">Mensagens capturadas</div></div>
-    <div class="stat"><div class="n">{{ est.total_analises }}</div><div class="l">Itens analisados</div></div>
-    <div class="stat crit"><div class="n">{{ est.criticos }}</div><div class="l">Críticos / urgentes</div></div>
-    <div class="stat"><div class="n">{{ est.grupos_ativos }}<span style="font-size:16px;color:var(--muted)">/{{ est.grupos_total }}</span></div><div class="l">Grupos ativos</div></div>
+  <!-- KPIs coloridos -->
+  <div class="kpis">
+    <div class="kpi k-green">
+      <div class="k-label">Mensagens capturadas</div>
+      <div class="k-n">{{ est.total_mensagens }}</div>
+      <div class="k-sub">total capturado</div>
+      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 20l1-5.5A8 8 0 1 1 21 12z"/></svg></span>
+    </div>
+    <div class="kpi k-blue">
+      <div class="k-label">Itens analisados pela IA</div>
+      <div class="k-n">{{ est.total_analises }}</div>
+      <div class="k-sub">pendências, dúvidas, decisões</div>
+      <span class="k-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></svg></span>
+    </div>
+    <div class="kpi k-purple">
+      <div class="k-label">Grupos ativos</div>
+      <div class="k-n">{{ est.grupos_ativos }}<span style="font-size:17px;opacity:.7">/{{ est.grupos_total }}</span></div>
+      <div class="k-sub">em monitoramento</div>
+      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M21 19a5 5 0 0 0-3.5-4.8"/></svg></span>
+    </div>
+    <div class="kpi k-orange">
+      <div class="k-label">Críticos / urgentes</div>
+      <div class="k-n">{{ est.criticos }}</div>
+      <div class="k-sub">requer atenção</div>
+      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+    </div>
   </div>
 
   <!-- Linha 1: categoria | urgência | tipo de mídia -->
   <div class="grid3" style="margin:18px 0 16px">
     <!-- Categoria: DONUT -->
     <div class="card pad">
-      <div class="section-title">Por categoria</div>
+      <div class="section-title"><span class="st-ic tint-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>Por categoria</div>
       {% set ctot = est.categoria | sum(attribute='n') %}
       <div class="chart-flex">
         <div class="donut-box">
@@ -50,7 +70,7 @@
 
     <!-- Urgência: COLUNAS -->
     <div class="card pad">
-      <div class="section-title">Por urgência</div>
+      <div class="section-title"><span class="st-ic tint-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg></span>Por urgência</div>
       {% set umax = (est.urgencia | max(attribute='n')).n or 1 %}
       <div class="cols">
         {% for r in est.urgencia %}
@@ -64,7 +84,7 @@
 
     <!-- Tipo de mídia: BARRA EMPILHADA 100% -->
     <div class="card pad">
-      <div class="section-title">Por tipo de mídia</div>
+      <div class="section-title"><span class="st-ic tint-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.5 6.5"/></svg></span>Por tipo de mídia</div>
       {% set tipos = est.tipo | selectattr('n') | list %}
       {% set ttot = tipos | sum(attribute='n') or 1 %}
       <div class="stacked">
@@ -82,7 +102,7 @@
 
   <!-- Atividade: ÁREA / LINHA (linha inteira) -->
   <div class="card pad" style="margin-bottom:16px">
-      <div class="section-title">Atividade <span class="count">últimos 7 dias</span></div>
+      <div class="section-title"><span class="st-ic tint-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span>Atividade <span class="count">últimos 7 dias</span></div>
       {% set amax = (est.atividade | max(attribute='n')).n or 1 %}
       {% set n = est.atividade | length %}
       {% set pts = [] %}
@@ -105,7 +125,7 @@
 
   <!-- Por grupo: BARRAS HORIZONTAIS (ranking, linha inteira) -->
   <div class="card pad">
-      <div class="section-title">Itens por grupo <span class="count">top 8</span></div>
+      <div class="section-title"><span class="st-ic tint-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="13" width="4" height="7" rx="1"/></svg></span>Itens por grupo <span class="count">top 8</span></div>
       {% if est.por_grupo %}
         <div class="bars">
           {% for r in est.por_grupo %}
