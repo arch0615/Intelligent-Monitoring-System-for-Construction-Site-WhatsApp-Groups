@@ -80,10 +80,8 @@
     </div>
   </div>
 
-  <!-- Linha 2: atividade | itens por grupo -->
-  <div class="grid2" style="margin-bottom:16px">
-    <!-- Atividade: ÁREA / LINHA -->
-    <div class="card pad">
+  <!-- Atividade: ÁREA / LINHA (linha inteira) -->
+  <div class="card pad" style="margin-bottom:16px">
       <div class="section-title">Atividade <span class="count">últimos 7 dias</span></div>
       {% set amax = (est.atividade | max(attribute='n')).n or 1 %}
       {% set n = est.atividade | length %}
@@ -103,10 +101,10 @@
         <polyline points="{{ pts | join(' ') }}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
       </svg>
       <div class="xlabels">{% for r in est.atividade %}<span>{{ r.label }}</span>{% endfor %}</div>
-    </div>
+  </div>
 
-    <!-- Por grupo: BARRAS HORIZONTAIS (ranking) -->
-    <div class="card pad">
+  <!-- Por grupo: BARRAS HORIZONTAIS (ranking, linha inteira) -->
+  <div class="card pad">
       <div class="section-title">Itens por grupo <span class="count">top 8</span></div>
       {% if est.por_grupo %}
         <div class="bars">
@@ -121,6 +119,5 @@
       {% else %}
         <div class="empty">Sem dados ainda.</div>
       {% endif %}
-    </div>
   </div>
 {% endblock %}
