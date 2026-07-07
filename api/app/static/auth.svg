@@ -1,38 +1,121 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0a1730"/><stop offset="1" stop-color="#122a53"/>
+      <stop offset="0" stop-color="#0a1730"/><stop offset="1" stop-color="#112a53"/>
     </linearGradient>
-    <radialGradient id="glow" cx="66%" cy="26%" r="62%">
-      <stop offset="0" stop-color="#3b82f6" stop-opacity=".42"/>
+    <radialGradient id="glow" cx="50%" cy="48%" r="42%">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity=".38"/>
       <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
     </radialGradient>
-    <pattern id="dots" width="48" height="48" patternUnits="userSpaceOnUse">
-      <circle cx="4" cy="4" r="2.4" fill="#4b8bf0"/>
-    </pattern>
-    <pattern id="win" width="28" height="36" patternUnits="userSpaceOnUse">
-      <rect width="28" height="36" fill="#0c1c38"/>
-      <rect x="7" y="8" width="8" height="10" rx="1" fill="#2f74d8" opacity=".5"/>
+    <linearGradient id="ai" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <pattern id="dots" width="50" height="50" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="2.3" fill="#4b8bf0"/>
     </pattern>
   </defs>
+
+  <!-- fundo -->
   <rect width="900" height="1200" fill="url(#sky)"/>
-  <rect width="900" height="770" fill="url(#dots)" opacity=".13"/>
-  <rect width="900" height="1200" fill="url(#glow)"/>
+  <rect width="900" height="1200" fill="url(#dots)" opacity=".10"/>
+  <ellipse cx="450" cy="590" rx="430" ry="430" fill="url(#glow)"/>
+
+  <!-- skyline de obra ao fundo -->
+  <g fill="#0a1830">
+    <rect x="-10" y="1010" width="150" height="200"/>
+    <rect x="150" y="960" width="120" height="250"/>
+    <rect x="620" y="980" width="130" height="230"/>
+    <rect x="760" y="940" width="160" height="270"/>
+  </g>
+  <g fill="#1e3a63" opacity=".55">
+    <rect x="20" y="1035" width="12" height="16"/><rect x="52" y="1035" width="12" height="16"/><rect x="84" y="1035" width="12" height="16"/>
+    <rect x="180" y="990" width="12" height="16"/><rect x="212" y="990" width="12" height="16"/>
+    <rect x="650" y="1010" width="12" height="16"/><rect x="682" y="1010" width="12" height="16"/>
+    <rect x="792" y="972" width="12" height="16"/><rect x="824" y="972" width="12" height="16"/><rect x="856" y="972" width="12" height="16"/>
+  </g>
+  <!-- guindaste -->
+  <g stroke="#3f6aa8" stroke-width="4" fill="none" opacity=".8" stroke-linecap="round">
+    <line x1="330" y1="1010" x2="330" y2="820"/>
+    <line x1="238" y1="835" x2="430" y2="835"/>
+    <line x1="330" y1="820" x2="270" y2="835"/>
+    <line x1="330" y1="820" x2="392" y2="835"/>
+    <line x1="392" y1="835" x2="392" y2="885"/>
+  </g>
+
+  <!-- linhas de fluxo (mensagens -> IA -> relatório) -->
+  <g stroke="#2f5488" stroke-width="2.5" fill="none" opacity=".55" stroke-dasharray="3 8" stroke-linecap="round">
+    <path d="M335 236 C 360 320, 430 360, 450 500"/>
+    <path d="M575 342 C 560 400, 480 430, 450 500"/>
+    <path d="M350 452 C 380 480, 430 480, 450 500"/>
+    <path d="M450 680 L 450 742"/>
+  </g>
+
+  <!-- balões de mensagem do WhatsApp (entrada) -->
+  <!-- texto -->
   <g>
-    <rect x="-10" y="820" width="150" height="400" fill="url(#win)"/>
-    <rect x="150" y="700" width="130" height="520" fill="url(#win)"/>
-    <rect x="290" y="880" width="120" height="340" fill="url(#win)"/>
-    <rect x="470" y="620" width="150" height="600" fill="url(#win)"/>
-    <rect x="630" y="800" width="120" height="420" fill="url(#win)"/>
-    <rect x="760" y="720" width="160" height="500" fill="url(#win)"/>
+    <rect x="205" y="150" width="250" height="86" rx="16" fill="#14304a"/>
+    <rect x="211" y="158" width="5" height="70" rx="2.5" fill="#25d366"/>
+    <rect x="232" y="172" width="196" height="9" rx="4" fill="#5a7aa3"/>
+    <rect x="232" y="192" width="168" height="9" rx="4" fill="#4a688f"/>
+    <rect x="232" y="212" width="120" height="9" rx="4" fill="#3f5c80"/>
   </g>
-  <g stroke="#5b8fd6" stroke-width="5" fill="none" opacity=".9" stroke-linecap="round">
-    <line x1="540" y1="620" x2="540" y2="250"/>
-    <line x1="360" y1="270" x2="700" y2="270"/>
-    <line x1="540" y1="250" x2="430" y2="270"/>
-    <line x1="540" y1="250" x2="662" y2="270"/>
-    <line x1="620" y1="270" x2="620" y2="360"/>
+  <!-- áudio -->
+  <g>
+    <rect x="450" y="255" width="250" height="90" rx="16" fill="#14304a"/>
+    <rect x="456" y="263" width="5" height="74" rx="2.5" fill="#25d366"/>
+    <circle cx="497" cy="300" r="18" fill="#25d366"/>
+    <path d="M491 292 L491 308 L505 300 Z" fill="#0a1730"/>
+    <g fill="#8fb7dd">
+      <rect x="528" y="292" width="4" height="16" rx="2"/><rect x="538" y="285" width="4" height="30" rx="2"/>
+      <rect x="548" y="289" width="4" height="22" rx="2"/><rect x="558" y="281" width="4" height="38" rx="2"/>
+      <rect x="568" y="290" width="4" height="20" rx="2"/><rect x="578" y="286" width="4" height="28" rx="2"/>
+      <rect x="588" y="293" width="4" height="14" rx="2"/><rect x="598" y="288" width="4" height="24" rx="2"/>
+      <rect x="608" y="292" width="4" height="16" rx="2"/><rect x="618" y="287" width="4" height="26" rx="2"/>
+      <rect x="628" y="294" width="4" height="12" rx="2"/><rect x="638" y="290" width="4" height="20" rx="2"/>
+    </g>
   </g>
-  <rect x="606" y="360" width="28" height="16" rx="2" fill="#5b8fd6" opacity=".9"/>
-  <rect x="0" y="1182" width="900" height="18" fill="#0a1526"/>
+  <!-- foto / documento -->
+  <g>
+    <rect x="230" y="362" width="245" height="90" rx="16" fill="#14304a"/>
+    <rect x="236" y="370" width="5" height="74" rx="2.5" fill="#25d366"/>
+    <rect x="255" y="384" width="66" height="48" rx="7" fill="#24405f"/>
+    <circle cx="276" cy="401" r="7" fill="#ffd27a"/>
+    <path d="M259 428 L281 405 L296 428 Z" fill="#6b8bb5"/>
+    <path d="M285 428 L300 411 L317 428 Z" fill="#557093"/>
+    <rect x="338" y="392" width="118" height="9" rx="4" fill="#4a688f"/>
+    <rect x="338" y="412" width="92" height="9" rx="4" fill="#3f5c80"/>
+  </g>
+
+  <!-- núcleo de IA -->
+  <ellipse cx="450" cy="590" rx="140" ry="140" fill="#3b82f6" opacity=".16"/>
+  <circle cx="450" cy="590" r="66" fill="url(#ai)"/>
+  <circle cx="450" cy="590" r="66" fill="none" stroke="#93c5fd" stroke-width="2" opacity=".7"/>
+  <g fill="#ffffff">
+    <path d="M450 555 C454 578, 462 586, 485 590 C462 594, 454 602, 450 625 C446 602, 438 594, 415 590 C438 586, 446 578, 450 555 Z"/>
+    <path d="M492 556 C494 566, 498 570, 508 572 C498 574, 494 578, 492 588 C490 578, 486 574, 476 572 C486 570, 490 566, 492 556 Z" opacity=".85"/>
+  </g>
+  <!-- pontos orbitando -->
+  <g fill="#bfdbfe">
+    <circle cx="516" cy="548" r="4"/><circle cx="392" cy="632" r="4"/><circle cx="520" cy="628" r="3.5"/>
+  </g>
+
+  <!-- cartão de saída: relatório organizado -->
+  <g>
+    <rect x="250" y="742" width="400" height="252" rx="18" fill="#0e2038" stroke="#2b4878" stroke-width="1.5"/>
+    <!-- cabeçalho -->
+    <rect x="278" y="768" width="150" height="13" rx="6" fill="#3b82f6"/>
+    <rect x="278" y="790" width="96" height="9" rx="4" fill="#3a5578"/>
+    <!-- alerta -->
+    <circle cx="614" cy="778" r="17" fill="#ef4444"/>
+    <rect x="611" y="769" width="6" height="12" rx="3" fill="#fff"/><circle cx="614" cy="787" r="3" fill="#fff"/>
+    <!-- linhas de categoria: pendência / dúvida / decisão -->
+    <g>
+      <circle cx="292" cy="836" r="8" fill="#fb923c"/>
+      <rect x="312" y="830" width="300" height="12" rx="6" fill="#233b5a"/>
+      <circle cx="292" cy="888" r="8" fill="#38bdf8"/>
+      <rect x="312" y="882" width="270" height="12" rx="6" fill="#233b5a"/>
+      <circle cx="292" cy="940" r="8" fill="#34d399"/>
+      <rect x="312" y="934" width="286" height="12" rx="6" fill="#233b5a"/>
+    </g>
+  </g>
 </svg>
