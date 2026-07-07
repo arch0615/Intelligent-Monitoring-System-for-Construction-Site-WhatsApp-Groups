@@ -62,7 +62,16 @@
     nav.menu a:hover { background: var(--sidebar-active); color: #fff; }
     nav.menu a.active { background: var(--sidebar-active); color: #fff; }
     nav.menu a.active svg { color: var(--accent); opacity: 1; }
-    .sidebar-foot { margin-top: auto; padding: 16px 22px; font-size: 11.5px; color: #6b7280; border-top: 1px solid #262a33; }
+    .sidebar-bottom { margin-top: auto; padding: 10px 12px 12px; }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; color: var(--sidebar-ink); }
+    .sidebar-user:hover, .sidebar-user.active { background: var(--sidebar-active); color: #fff; }
+    .sidebar-user .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; flex-shrink: 0; }
+    .su-info { display: flex; flex-direction: column; overflow: hidden; }
+    .su-info b { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .su-info span { font-size: 11.5px; color: #7c8698; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-logout { display: block; padding: 8px 10px; margin-top: 2px; border-radius: 9px; color: var(--sidebar-ink); font-size: 13.5px; font-weight: 600; }
+    .sidebar-logout:hover { background: var(--sidebar-active); color: #fff; }
+    .sidebar-foot { padding: 12px 10px 2px; font-size: 11px; color: #5b6473; }
 
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .topbar {
@@ -231,7 +240,16 @@
           Saúde
         </a>
       </nav>
-      <div class="sidebar-foot">Sistema de monitoramento inteligente de grupos de WhatsApp</div>
+      <div class="sidebar-bottom">
+        {% if usuario %}
+        <a href="/perfil" class="sidebar-user{{ ' active' if request.url.path == '/perfil' else '' }}">
+          <span class="avatar">{{ usuario.nome[0]|upper }}</span>
+          <span class="su-info"><b>{{ usuario.nome }}</b><span>{{ usuario.email }}</span></span>
+        </a>
+        <a href="/logout" class="sidebar-logout">↩&nbsp; Sair</a>
+        {% endif %}
+        <div class="sidebar-foot">Monitoramento inteligente de grupos de WhatsApp</div>
+      </div>
     </aside>
     <div class="main">
       <header class="topbar">

@@ -167,3 +167,56 @@ def estatisticas() -> dict[str, Any]:
         "atividade": atividade,
         "por_grupo": por_grupo,
     }
+
+
+# --------------------------- Usuários (login) ----------------------------
+def criar_usuario(nome: str, email: str, senha_hash: str) -> dict[str, Any]:
+    """Cria um usuário. Levanta psycopg.errors.UniqueViolation se o e-mail já existe."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """INSERT INTO usuarios (nome, email, senha_hash)
+               VALUES (%s, lower(%s), %s)
+               RETURNING id, nome, email""",
+            (nome, email, senha_hash),
+        )
+        row = cur.fetchone()
+        conn.commit()
+    return row
+
+
+def buscar_usuario_por_email(email: str) -> dict[str, Any] | None:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, nome, email, senha_hash FROM usuarios WHERE email = lower(%s)",
+            (email,),
+        )
+        return cur.fetchone()
+
+
+def buscar_usuario_por_id(uid: int) -> dict[str, Any] | None:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, nome, email FROM usuarios WHERE id = %s", (uid,))
+        return cur.fetchone()
+
+
+def contar_usuarios() -> int:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) n FROM usuarios")
+        return cur.fetchone()["n"]
+
+
+def atualizar_usuario(uid: int, nome: str, email: str, senha_hash: str | None = None) -> None:
+    """Atualiza nome/e-mail e, opcionalmente, a senha."""
+    with _connect() as conn, conn.cursor() as cur:
+        if senha_hash:
+            cur.execute(
+                """UPDATE usuarios SET nome=%s, email=lower(%s), senha_hash=%s,
+                       atualizado_em=now() WHERE id=%s""",
+                (nome, email, senha_hash, uid),
+            )
+        else:
+            cur.execute(
+                "UPDATE usuarios SET nome=%s, email=lower(%s), atualizado_em=now() WHERE id=%s",
+                (nome, email, uid),
+            )
+        conn.commit()

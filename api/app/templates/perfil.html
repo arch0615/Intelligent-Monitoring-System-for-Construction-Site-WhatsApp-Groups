@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Meu perfil{% endblock %}
+{% block cabecalho %}Meu perfil{% endblock %}
+{% block subcabecalho %}Dados da conta e senha{% endblock %}
+
+{% block conteudo %}
+  {% if ok %}<div class="card pad" style="margin-bottom:16px;color:var(--green);border-color:var(--green)">Alterações salvas com sucesso.</div>{% endif %}
+  {% if erro %}<div class="card pad" style="margin-bottom:16px;color:var(--crit);border-color:var(--crit)">{{ erro }}</div>{% endif %}
+
+  <form method="post" action="/perfil" style="max-width:560px">
+    <div class="card pad" style="margin-bottom:16px">
+      <div class="section-title">Dados da conta</div>
+      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Nome</label>
+      <input name="nome" type="text" value="{{ usuario.nome }}" required style="width:100%">
+      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">E-mail</label>
+      <input name="email" type="email" value="{{ usuario.email }}" required style="width:100%">
+    </div>
+
+    <div class="card pad" style="margin-bottom:16px">
+      <div class="section-title">Alterar senha <span class="count">opcional</span></div>
+      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Senha atual</label>
+      <input name="senha_atual" type="password" autocomplete="current-password" style="width:100%">
+      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Nova senha</label>
+      <input name="nova_senha" type="password" minlength="6" autocomplete="new-password" style="width:100%">
+      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Confirmar nova senha</label>
+      <input name="confirmar" type="password" minlength="6" autocomplete="new-password" style="width:100%">
+      <p class="meta" style="color:var(--muted);font-size:12.5px;margin-top:10px">Deixe em branco para manter a senha atual.</p>
+    </div>
+
+    <button class="btn" type="submit">Salvar</button>
+  </form>
+{% endblock %}

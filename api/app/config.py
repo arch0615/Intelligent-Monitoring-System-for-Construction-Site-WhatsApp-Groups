@@ -47,6 +47,9 @@ class Config:
     TZ = os.environ.get("TZ", "America/Sao_Paulo")
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
 
+    # Segredo para assinar o cookie de sessão (login). Definir no .env.
+    SESSION_SECRET = os.environ.get("SESSION_SECRET", "troque-este-segredo-de-sessao")
+
 
 config = Config()
 
