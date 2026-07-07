@@ -140,7 +140,8 @@
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
     .grid3 > .card { display: flex; flex-direction: column; }
-    .grid3 > .card .chart-flex { flex: 1; justify-content: center; min-height: 172px; }
+    .grid3 > .card .chart-flex { flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 18px; flex-wrap: nowrap; min-height: 172px; }
+    .grid3 > .card .chart-flex .legend { width: 100%; flex: none; min-width: 0; }
     .bars { display: flex; flex-direction: column; gap: 11px; margin-top: 8px; }
     .bar-row { display: grid; grid-template-columns: 104px 1fr 38px; align-items: center; gap: 12px; font-size: 13.5px; }
     .bar-track { background: rgba(255,255,255,.07); border-radius: 6px; height: 9px; overflow: hidden; }
