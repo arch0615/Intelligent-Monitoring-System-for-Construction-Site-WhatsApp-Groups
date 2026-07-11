@@ -30,7 +30,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Monitoramento de Obras — API", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=config.SESSION_SECRET, max_age=14 * 24 * 3600)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=config.SESSION_SECRET,
+    max_age=14 * 24 * 3600,
+    https_only=True,  # cookie de sessão só trafega sob HTTPS (painel servido pelo Caddy/TLS)
+    same_site="lax",
+)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 

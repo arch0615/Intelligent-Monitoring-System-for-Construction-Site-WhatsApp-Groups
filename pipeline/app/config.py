@@ -34,6 +34,7 @@ class Config:
     # Redis
     REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
     REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
+    REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD") or None
     REDIS_STREAM = os.environ.get("REDIS_STREAM", "captura:eventos")
     REDIS_GROUP = os.environ.get("REDIS_CONSUMER_GROUP", "pipeline")
 

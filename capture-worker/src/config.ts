@@ -20,6 +20,7 @@ export const config = {
   redis: {
     host: process.env.REDIS_HOST ?? "redis",
     port: Number(process.env.REDIS_PORT ?? 6379),
+    password: process.env.REDIS_PASSWORD || undefined,
     stream: process.env.REDIS_STREAM ?? "captura:eventos",
   },
   whatsapp: {

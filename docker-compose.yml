@@ -21,8 +21,9 @@ services:
       - pgdata:/var/lib/postgresql/data
       # Migrations rodam automaticamente na primeira subida do banco
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    # Exposto apenas no localhost do servidor (acesso via túnel SSH), nunca na internet.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -32,11 +33,14 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    # Protegido por senha (requirepass) e SEM porta publicada: acessível apenas
+    # pela rede interna do Docker. Fecha o vetor de sequestro por REPLICAOF.
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      # Deixa o redis-cli do healthcheck autenticar automaticamente.
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
       - redisdata:/data
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -82,9 +86,28 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # Não publicado na internet: acesso externo só via Caddy (HTTPS).
+    # 127.0.0.1:8000 fica disponível apenas no servidor (debug/health local).
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+
+  # Proxy reverso + HTTPS automático (Let's Encrypt) — serve o domínio público
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   pgdata:
   redisdata:
+  caddy_data:
+  caddy_config:

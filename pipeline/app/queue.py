@@ -14,7 +14,7 @@ import redis
 
 from .config import config, logger
 
-_r = redis.Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, decode_responses=True)
+_r = redis.Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, password=config.REDIS_PASSWORD, decode_responses=True)
 
 
 def garantir_grupo() -> None:

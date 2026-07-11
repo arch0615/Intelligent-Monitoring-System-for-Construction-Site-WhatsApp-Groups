@@ -1,0 +1,6 @@
+# Proxy reverso com HTTPS automático (Let's Encrypt) para o painel.
+# Caddy obtém e renova o certificado sozinho e redireciona HTTP -> HTTPS.
+obras.construtoramonreal.com.br {
+	encode zstd gzip
+	reverse_proxy api:8000
+}
