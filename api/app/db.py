@@ -220,3 +220,147 @@ def atualizar_usuario(uid: int, nome: str, email: str, senha_hash: str | None = 
                 (nome, email, uid),
             )
         conn.commit()
+
+
+# ===========================================================================
+# Lista Mãe — lista de tarefas persistente construída a partir das análises.
+# ===========================================================================
+_URGENCIAS = ("critica", "alta", "media", "baixa")
+_CATEGORIAS = ("pendencia", "duvida", "decisao")
+
+
+def _filtros_lista(urgencia: str | None, grupo_id: int | None, categoria: str | None
+                   ) -> tuple[list[str], list[Any]]:
+    """Monta as condições comuns de filtro (urgência / obra / categoria)."""
+    cond: list[str] = []
+    params: list[Any] = []
+    if urgencia in _URGENCIAS:
+        cond.append("a.urgencia = %s"); params.append(urgencia)
+    if grupo_id is not None:
+        cond.append("g.id = %s"); params.append(grupo_id)
+    if categoria in _CATEGORIAS:
+        cond.append("a.categoria = %s"); params.append(categoria)
+    return cond, params
+
+
+def lista_mae_itens(status: str = "aberto", urgencia: str | None = None,
+                    grupo_id: int | None = None, categoria: str | None = None
+                    ) -> list[dict[str, Any]]:
+    """Itens já incorporados à Lista Mãe, filtrados. status: aberto|resolvidos|todos.
+
+    Ordena: em aberto primeiro, itens de hoje no topo, depois por urgência e recência.
+    """
+    cond = ["a.na_lista_mae = true"]
+    params: list[Any] = []
+    fc, fp = _filtros_lista(urgencia, grupo_id, categoria)
+    cond += fc; params += fp
+    if status == "aberto":
+        cond.append("a.resolvido = false")
+    elif status == "resolvidos":
+        cond.append("a.resolvido = true")
+    sql = f"""
+        SELECT a.id, a.categoria, a.urgencia, a.resumo, a.criado_em,
+               a.resolvido, a.resolvido_em,
+               (a.criado_em >= date_trunc('day', now())) AS novo,
+               g.id AS grupo_id, g.nome AS grupo_nome,
+               u.nome AS resolvido_por_nome
+        FROM analises a
+        JOIN mensagens m ON m.id = a.mensagem_id
+        JOIN grupos g    ON g.id = m.grupo_id
+        LEFT JOIN usuarios u ON u.id = a.resolvido_por
+        WHERE {' AND '.join(cond)}
+        ORDER BY a.resolvido,
+                 (a.criado_em >= date_trunc('day', now())) DESC,
+                 {_ORDEM_URGENCIA},
+                 a.criado_em DESC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, params)
+        return cur.fetchall()
+
+
+def lista_mae_novos() -> list[dict[str, Any]]:
+    """Itens ainda não incorporados à Lista Mãe (inbox de triagem)."""
+    sql = f"""
+        SELECT a.id, a.categoria, a.urgencia, a.resumo, a.criado_em,
+               g.id AS grupo_id, g.nome AS grupo_nome
+        FROM analises a
+        JOIN mensagens m ON m.id = a.mensagem_id
+        JOIN grupos g    ON g.id = m.grupo_id
+        WHERE a.na_lista_mae = false
+        ORDER BY {_ORDEM_URGENCIA}, a.criado_em DESC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.fetchall()
+
+
+def lista_mae_progresso(urgencia: str | None = None, grupo_id: int | None = None,
+                        categoria: str | None = None) -> dict[str, Any]:
+    """Total/resolvidos/percentual dos itens na Lista Mãe sob os filtros atuais."""
+    cond = ["a.na_lista_mae = true"]
+    params: list[Any] = []
+    fc, fp = _filtros_lista(urgencia, grupo_id, categoria)
+    cond += fc; params += fp
+    sql = f"""
+        SELECT count(*) AS total,
+               count(*) FILTER (WHERE a.resolvido) AS resolvidos
+        FROM analises a
+        JOIN mensagens m ON m.id = a.mensagem_id
+        JOIN grupos g    ON g.id = m.grupo_id
+        WHERE {' AND '.join(cond)}
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, params)
+        r = cur.fetchone()
+    total, resolvidos = r["total"], r["resolvidos"]
+    pct = round(resolvidos / total * 100) if total else 0
+    return {"total": total, "resolvidos": resolvidos, "pct": pct}
+
+
+def contar_novos_lista() -> int:
+    """Quantidade de itens aguardando triagem (badge do menu)."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) AS n FROM analises WHERE na_lista_mae = false")
+        return cur.fetchone()["n"]
+
+
+def resolver_item(analise_id: int, resolver: bool, usuario_id: int | None = None
+                  ) -> dict[str, Any] | None:
+    """Marca um item como resolvido (registra data/autor) ou reabre. Devolve o novo estado."""
+    with _connect() as conn, conn.cursor() as cur:
+        if resolver:
+            cur.execute(
+                """UPDATE analises SET resolvido=true, resolvido_em=now(), resolvido_por=%s
+                       WHERE id=%s AND na_lista_mae=true
+                   RETURNING resolvido, resolvido_em""",
+                (usuario_id, analise_id),
+            )
+        else:
+            cur.execute(
+                """UPDATE analises SET resolvido=false, resolvido_em=NULL, resolvido_por=NULL
+                       WHERE id=%s
+                   RETURNING resolvido, resolvido_em""",
+                (analise_id,),
+            )
+        row = cur.fetchone()
+        conn.commit()
+        return row
+
+
+def adicionar_lista(analise_id: int | None = None, todos: bool = False) -> int:
+    """Incorpora itens à Lista Mãe. Devolve quantos itens foram adicionados."""
+    with _connect() as conn, conn.cursor() as cur:
+        if todos:
+            cur.execute(
+                "UPDATE analises SET na_lista_mae=true, adicionado_em=now() WHERE na_lista_mae=false"
+            )
+        else:
+            cur.execute(
+                """UPDATE analises SET na_lista_mae=true, adicionado_em=now()
+                       WHERE id=%s AND na_lista_mae=false""",
+                (analise_id,),
+            )
+        n = cur.rowcount
+        conn.commit()
+        return n

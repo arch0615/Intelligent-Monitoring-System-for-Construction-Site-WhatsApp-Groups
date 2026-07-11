@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 
 import psycopg
-from fastapi import Depends, FastAPI, Form, Query, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -210,6 +210,51 @@ def saude_html(request: Request, usuario: dict = Depends(auth.requer_login)):
 def grupos_toggle(grupo_id: int, ativo: bool = Form(...), usuario: dict = Depends(auth.requer_login)):
     db.definir_grupo_ativo(grupo_id, ativo)
     return RedirectResponse("/grupos", status_code=303)
+
+
+# ============================= Lista Mãe (protegido) =====================
+@app.get("/lista-mae", response_class=HTMLResponse)
+def lista_mae_html(request: Request, status: str = "aberto", urgencia: str = "",
+                   grupo_id: str | None = None, categoria: str = "",
+                   usuario: dict = Depends(auth.requer_login)):
+    gid = _parse_grupo_id(grupo_id)
+    urg = urgencia if urgencia in db._URGENCIAS else None
+    cat = categoria if categoria in db._CATEGORIAS else None
+    st = status if status in ("aberto", "resolvidos", "todos") else "aberto"
+    return templates.TemplateResponse(
+        request, "lista_mae.html",
+        {
+            "usuario": usuario,
+            "itens": db.lista_mae_itens(st, urg, gid, cat),
+            "novos": db.lista_mae_novos(),
+            "progresso": db.lista_mae_progresso(urg, gid, cat),
+            "grupos": db.listar_grupos(),
+            "f": {"status": st, "urgencia": urgencia, "grupo_id": gid, "categoria": categoria},
+        },
+    )
+
+
+@app.post("/lista-mae/adicionar")
+def lista_mae_adicionar(item_id: str = Form(""), todos: str = Form(""),
+                        usuario: dict = Depends(auth.requer_login)):
+    if todos:
+        db.adicionar_lista(todos=True)
+    elif item_id.isdigit():
+        db.adicionar_lista(int(item_id))
+    return RedirectResponse("/lista-mae", status_code=303)
+
+
+@app.post("/api/lista-mae/{item_id}/toggle")
+def api_lista_toggle(item_id: int, resolver: bool = Form(...),
+                     usuario: dict = Depends(auth.requer_login)):
+    novo = db.resolver_item(item_id, resolver, usuario["id"])
+    if novo is None:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    return {
+        "resolvido": novo["resolvido"],
+        "resolvido_em": novo["resolvido_em"].strftime("%d/%m/%Y") if novo["resolvido_em"] else None,
+        "por": usuario["nome"] if novo["resolvido"] else None,
+    }
 
 
 # ============================== API (protegido) ==========================

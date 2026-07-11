@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block titulo %}Lista Mãe{% endblock %}
+{% block cabecalho %}Lista Mãe{% endblock %}
+{% block subcabecalho %}Pendências acumuladas com acompanhamento de resolução{% endblock %}
+
+{% set rot_cat = {"pendencia": "Pendência", "duvida": "Dúvida", "decisao": "Decisão"} %}
+{% set rot_urg = {"critica": "Crítica", "alta": "Alta", "media": "Média", "baixa": "Baixa"} %}
+
+{% block conteudo %}
+<style>
+  .lm-prog-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; font-size:14.5px; }
+  .lm-prog-head b { font-size:16px; }
+  .lm-bar { height:12px; border-radius:999px; background:#132038; overflow:hidden; border:1px solid var(--line); }
+  .lm-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#3b82f6,#22c55e); transition:width .35s ease; }
+
+  .section-title.spread { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+
+  .lm-item { align-items:center; }
+  .lm-check { appearance:none; -webkit-appearance:none; flex:0 0 auto; width:20px; height:20px; border:2px solid var(--line); border-radius:6px; background:#0c1426; cursor:pointer; position:relative; transition:.15s; margin-top:1px; }
+  .lm-check:hover { border-color:var(--accent); }
+  .lm-check:checked { background:#22c55e; border-color:#22c55e; }
+  .lm-check:checked::after { content:""; position:absolute; left:6px; top:2px; width:5px; height:10px; border:solid #04121a; border-width:0 2.5px 2.5px 0; transform:rotate(45deg); }
+  .lm-check:disabled { opacity:.5; cursor:wait; }
+
+  .lm-item.resolvido .txt { text-decoration:line-through; color:var(--muted); }
+  .lm-item.resolvido { opacity:.62; }
+  .lm-resolvido-meta { color:#34d399; font-weight:600; }
+
+  .novo-badge { display:inline-block; margin-left:8px; background:#fbbf24; color:#1c1400; font-size:10.5px; font-weight:800; letter-spacing:.04em; padding:2px 7px; border-radius:999px; vertical-align:middle; }
+
+  .cat-chip { font-weight:700; padding:2px 8px; border-radius:999px; font-size:11px; }
+  .cat-pendencia { color:#fb923c; background:rgba(251,146,60,.14); }
+  .cat-duvida    { color:#38bdf8; background:rgba(56,189,248,.14); }
+  .cat-decisao   { color:#34d399; background:rgba(52,211,153,.14); }
+</style>
+
+<!-- Barra de progresso -->
+<div class="card pad" style="margin-bottom:16px">
+  <div class="lm-prog-head">
+    <span><b id="lm-done">{{ progresso.resolvidos }}</b> de <b id="lm-total">{{ progresso.total }}</b> itens resolvidos (<span id="lm-pct">{{ progresso.pct }}</span>%)</span>
+    <span class="count">itens em aberto: {{ progresso.total - progresso.resolvidos }}</span>
+  </div>
+  <div class="lm-bar"><div class="lm-bar-fill" id="lm-bar" style="width: {{ progresso.pct }}%"></div></div>
+</div>
+
+<!-- Novos itens aguardando triagem -->
+{% if novos %}
+<div class="card pad" style="margin-bottom:16px">
+  <div class="section-title spread">
+    <span>🆕 Novos itens <span class="count">{{ novos|length }} aguardando</span></span>
+    <form method="post" action="/lista-mae/adicionar" style="margin:0">
+      <input type="hidden" name="todos" value="1">
+      <button class="btn" type="submit">Adicionar todos à Lista Mãe</button>
+    </form>
+  </div>
+  {% for i in novos %}
+    <div class="item">
+      <span class="badge u-{{ i.urgencia }}">{{ rot_urg[i.urgencia] }}</span>
+      <div class="body">
+        <div class="txt">{{ i.resumo }}</div>
+        <div class="meta">
+          <span class="cat-chip cat-{{ i.categoria }}">{{ rot_cat[i.categoria] }}</span>
+          <span>📍 {{ i.grupo_nome or "grupo" }}</span>
+          <span>· {{ i.criado_em.strftime("%d/%m %H:%M") }}</span>
+        </div>
+      </div>
+      <form method="post" action="/lista-mae/adicionar" style="margin:0">
+        <input type="hidden" name="item_id" value="{{ i.id }}">
+        <button class="btn ghost" type="submit">+ Adicionar</button>
+      </form>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Filtros -->
+<div class="card pad" style="margin-bottom:16px">
+  <form method="get" action="/lista-mae" class="toolbar">
+    <select name="status">
+      <option value="aberto"     {% if f.status == 'aberto' %}selected{% endif %}>Em aberto</option>
+      <option value="resolvidos" {% if f.status == 'resolvidos' %}selected{% endif %}>Resolvidos</option>
+      <option value="todos"      {% if f.status == 'todos' %}selected{% endif %}>Todos</option>
+    </select>
+    <select name="urgencia">
+      <option value="">Toda urgência</option>
+      {% for u in ['critica','alta','media','baixa'] %}
+        <option value="{{ u }}" {% if f.urgencia == u %}selected{% endif %}>{{ rot_urg[u] }}</option>
+      {% endfor %}
+    </select>
+    <select name="grupo_id">
+      <option value="">Todas as obras</option>
+      {% for g in grupos %}
+        <option value="{{ g.id }}" {% if f.grupo_id == g.id %}selected{% endif %}>{{ g.nome or g.wa_jid }}</option>
+      {% endfor %}
+    </select>
+    <select name="categoria">
+      <option value="">Toda categoria</option>
+      {% for c in ['pendencia','duvida','decisao'] %}
+        <option value="{{ c }}" {% if f.categoria == c %}selected{% endif %}>{{ rot_cat[c] }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<!-- Lista Mãe -->
+<div class="card pad">
+  <div class="section-title">📋 Lista Mãe <span class="count">{{ itens|length }} {{ 'item' if itens|length == 1 else 'itens' }}</span></div>
+  {% if itens %}
+    {% for i in itens %}
+      <div class="item lm-item {{ 'resolvido' if i.resolvido }}" data-id="{{ i.id }}">
+        <input type="checkbox" class="lm-check" {{ 'checked' if i.resolvido }} aria-label="Marcar como resolvido">
+        <span class="badge u-{{ i.urgencia }}">{{ rot_urg[i.urgencia] }}</span>
+        <div class="body">
+          <div class="txt">{{ i.resumo }}{% if i.novo %}<span class="novo-badge">NOVO</span>{% endif %}</div>
+          <div class="meta">
+            <span class="cat-chip cat-{{ i.categoria }}">{{ rot_cat[i.categoria] }}</span>
+            <span>📍 {{ i.grupo_nome or "grupo" }}</span>
+            <span>· {{ i.criado_em.strftime("%d/%m/%Y") }}</span>
+            <span class="lm-resolvido-meta">{% if i.resolvido and i.resolvido_em %}✓ resolvido em {{ i.resolvido_em.strftime("%d/%m/%Y") }}{% if i.resolvido_por_nome %} por {{ i.resolvido_por_nome }}{% endif %}{% endif %}</span>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">Nenhum item para os filtros selecionados.</div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    const total = () => parseInt(document.getElementById('lm-total').textContent) || 0;
+    function updateProgress(delta) {
+      const done = document.getElementById('lm-done');
+      let d = (parseInt(done.textContent) || 0) + delta;
+      const t = total();
+      d = Math.max(0, Math.min(t, d));
+      done.textContent = d;
+      const pct = t ? Math.round(d / t * 100) : 0;
+      document.getElementById('lm-pct').textContent = pct;
+      document.getElementById('lm-bar').style.width = pct + '%';
+    }
+    document.querySelectorAll('.lm-check').forEach(function (cb) {
+      cb.addEventListener('change', async function () {
+        const row = cb.closest('.lm-item');
+        const id = row.dataset.id;
+        const resolver = cb.checked;
+        cb.disabled = true;
+        try {
+          const body = new URLSearchParams({ resolver: resolver ? 'true' : 'false' });
+          const r = await fetch('/api/lista-mae/' + id + '/toggle', { method: 'POST', body: body });
+          if (!r.ok) throw new Error('http ' + r.status);
+          const d = await r.json();
+          row.classList.toggle('resolvido', d.resolvido);
+          const meta = row.querySelector('.lm-resolvido-meta');
+          meta.textContent = d.resolvido
+            ? ('✓ resolvido em ' + d.resolvido_em + (d.por ? ' por ' + d.por : ''))
+            : '';
+          updateProgress(d.resolvido ? 1 : -1);
+        } catch (e) {
+          cb.checked = !resolver;
+          alert('Não foi possível atualizar o item. Tente novamente.');
+        } finally {
+          cb.disabled = false;
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}
