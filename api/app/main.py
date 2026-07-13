@@ -6,7 +6,7 @@ Páginas do painel exigem login. Rotas abertas: /login, /register, /health,
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import date
+from datetime import date, timedelta
 
 import psycopg
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
@@ -176,11 +176,51 @@ def relatorio_html(request: Request, data: str | None = None, grupo_id: str | No
     return _render_relatorio(request, data, grupo_id, usuario)
 
 
+def _periodo_intervalo(periodo: str, di: str | None, df: str | None) -> tuple[date | None, date | None]:
+    """Converte o preset de período (ou datas custom) em (inicio, fim). 'todos' -> (None, None)."""
+    hoje = date.today()
+    if periodo == "hoje":
+        return hoje, hoje
+    if periodo == "7d":
+        return hoje - timedelta(days=6), hoje
+    if periodo == "30d":
+        return hoje - timedelta(days=29), hoje
+    if periodo == "custom":
+        try:
+            ini = date.fromisoformat(di) if di else hoje - timedelta(days=29)
+            fim = date.fromisoformat(df) if df else hoje
+        except ValueError:
+            return None, None
+        return (fim, ini) if ini > fim else (ini, fim)
+    return None, None  # "todos"
+
+
+def _ctx_dashboard(periodo: str, grupo_id: str | None, di: str | None, df: str | None) -> dict:
+    gid = _parse_grupo_id(grupo_id)
+    ini, fim = _periodo_intervalo(periodo, di, df)
+    return {
+        "est": db.estatisticas(ini, fim, gid),
+        "grupos": db.listar_grupos(),
+        "f": {"periodo": periodo, "grupo_id": gid, "di": di or "", "df": df or ""},
+    }
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, usuario: dict = Depends(auth.requer_login)):
-    return templates.TemplateResponse(
-        request, "dashboard.html", {"est": db.estatisticas(), "usuario": usuario}
-    )
+def dashboard(request: Request, periodo: str = "todos", grupo_id: str | None = None,
+              di: str | None = None, df: str | None = None,
+              usuario: dict = Depends(auth.requer_login)):
+    ctx = _ctx_dashboard(periodo, grupo_id, di, df)
+    ctx["usuario"] = usuario
+    return templates.TemplateResponse(request, "dashboard.html", ctx)
+
+
+@app.get("/dashboard/fragmento", response_class=HTMLResponse)
+def dashboard_fragmento(request: Request, periodo: str = "todos", grupo_id: str | None = None,
+                        di: str | None = None, df: str | None = None,
+                        usuario: dict = Depends(auth.requer_login)):
+    """Só o miolo do dashboard (KPIs + gráficos) — usado para filtrar sem recarregar a página."""
+    ctx = _ctx_dashboard(periodo, grupo_id, di, df)
+    return templates.TemplateResponse(request, "dashboard_conteudo.html", ctx)
 
 
 @app.get("/historico", response_class=HTMLResponse)

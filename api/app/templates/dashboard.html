@@ -1,166 +1,86 @@
 {% extends "base.html" %}
 {% block titulo %}Dashboard{% endblock %}
 {% block cabecalho %}Dashboard{% endblock %}
-{% block subcabecalho %}Visão geral de todo o histórico{% endblock %}
-
-{% set rot_cat = {"pendencia": "Pendências", "duvida": "Dúvidas", "decisao": "Decisões"} %}
-{% set rot_urg = {"critica": "Crítica", "alta": "Alta", "media": "Média", "baixa": "Baixa"} %}
-{% set rot_tipo = {"texto": "Texto", "audio": "Áudio", "imagem": "Imagem", "video": "Vídeo", "documento": "Documento", "outro": "Outro"} %}
-{% set cor_cat = {"pendencia": "#fb923c", "duvida": "#38bdf8", "decisao": "#34d399"} %}
-{% set cor_urg = {"critica": "#f87171", "alta": "#fb923c", "media": "#fbbf24", "baixa": "#94a3b8"} %}
-{% set cor_tipo = {"texto": "#60a5fa", "audio": "#a78bfa", "imagem": "#f472b6", "video": "#fb923c", "documento": "#34d399", "outro": "#94a3b8"} %}
+{% block subcabecalho %}Visão geral, com filtro por período e obra{% endblock %}
 
 {% block conteudo %}
-  <!-- KPIs coloridos -->
-  <div class="kpis">
-    <div class="kpi k-green">
-      <div class="k-label">Mensagens capturadas</div>
-      <div class="k-n">{{ est.total_mensagens }}</div>
-      <div class="k-sub">total capturado</div>
-      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 20l1-5.5A8 8 0 1 1 21 12z"/></svg></span>
+<style>
+  .dash-filtros { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; }
+  .dash-filtros .seg { display:inline-flex; background:#0c1426; border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
+  .dash-filtros .seg button { font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:transparent; border:0; padding:7px 13px; border-radius:8px; cursor:pointer; transition:.15s; }
+  .dash-filtros .seg button:hover { color:var(--ink); }
+  .dash-filtros .seg button.on { background:var(--accent); color:#fff; }
+  .dash-filtros select, .dash-filtros input[type=date] { min-width:0; }
+  #dash-custom { display:none; gap:8px; }
+  #dash-custom.show { display:inline-flex; }
+  #dash-content.loading { opacity:.5; transition:opacity .15s; pointer-events:none; }
+</style>
+
+<div class="card pad" style="margin-bottom:16px">
+  <div class="dash-filtros">
+    <div class="seg" id="dash-periodo">
+      <button data-p="todos">Todos</button>
+      <button data-p="hoje">Hoje</button>
+      <button data-p="7d">7 dias</button>
+      <button data-p="30d">30 dias</button>
+      <button data-p="custom">Personalizado</button>
     </div>
-    <div class="kpi k-blue">
-      <div class="k-label">Itens analisados pela IA</div>
-      <div class="k-n">{{ est.total_analises }}</div>
-      <div class="k-sub">pendências, dúvidas, decisões</div>
-      <span class="k-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></svg></span>
+    <div id="dash-custom">
+      <input type="date" id="dash-di" value="{{ f.di }}">
+      <input type="date" id="dash-df" value="{{ f.df }}">
     </div>
-    <div class="kpi k-purple">
-      <div class="k-label">Grupos ativos</div>
-      <div class="k-n">{{ est.grupos_ativos }}<span style="font-size:17px;opacity:.7">/{{ est.grupos_total }}</span></div>
-      <div class="k-sub">em monitoramento</div>
-      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M21 19a5 5 0 0 0-3.5-4.8"/></svg></span>
-    </div>
-    <div class="kpi k-orange">
-      <div class="k-label">Críticos / urgentes</div>
-      <div class="k-n">{{ est.criticos }}</div>
-      <div class="k-sub">requer atenção</div>
-      <span class="k-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
-    </div>
+    <select id="dash-obra">
+      <option value="">Todas as obras</option>
+      {% for g in grupos %}<option value="{{ g.id }}" {% if f.grupo_id == g.id %}selected{% endif %}>{{ g.nome or g.wa_jid }}</option>{% endfor %}
+    </select>
   </div>
+</div>
 
-  <!-- Linha 1: categoria | urgência | tipo de mídia -->
-  <div class="grid3" style="margin:18px 0 16px">
-    <!-- Categoria: DONUT -->
-    <div class="card pad">
-      <div class="section-title"><span class="st-ic tint-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>Por categoria</div>
-      {% set ctot = est.categoria | sum(attribute='n') %}
-      <div class="chart-flex">
-        <div class="donut-box">
-          {% if ctot %}
-            {% set acc = namespace(v=0) %}
-            {% set parts = [] %}
-            {% for r in est.categoria %}
-              {% set start = acc.v / ctot * 100 %}
-              {% set acc.v = acc.v + r.n %}
-              {% set _ = parts.append(cor_cat[r.label] ~ ' ' ~ start ~ '% ' ~ (acc.v / ctot * 100) ~ '%') %}
-            {% endfor %}
-            <div class="donut" style="background: conic-gradient({{ parts | join(', ') }})"></div>
-          {% else %}
-            <div class="donut" style="background:rgba(255,255,255,.06)"></div>
-          {% endif %}
-          <div class="donut-tot"><b>{{ ctot }}</b><span>itens</span></div>
-        </div>
-        <ul class="legend">
-          {% for r in est.categoria %}
-            <li><span class="dot" style="background:{{ cor_cat[r.label] }}"></span> {{ rot_cat[r.label] }} <b>{{ r.n }}</b></li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
+<div id="dash-content">{% include "dashboard_conteudo.html" %}</div>
 
-    <!-- Urgência: COLUNAS -->
-    <div class="card pad">
-      <div class="section-title"><span class="st-ic tint-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg></span>Por urgência</div>
-      {% set utot = est.urgencia | sum(attribute='n') %}
-      <div class="chart-flex">
-        <div class="pie-box">
-          {% if utot %}
-            {% set acc = namespace(v=0) %}
-            {% set parts = [] %}
-            {% for r in est.urgencia %}
-              {% set start = acc.v / utot * 100 %}
-              {% set acc.v = acc.v + r.n %}
-              {% set _ = parts.append(cor_urg[r.label] ~ ' ' ~ start ~ '% ' ~ (acc.v / utot * 100) ~ '%') %}
-            {% endfor %}
-            <div class="pie" style="background: conic-gradient({{ parts | join(', ') }})"></div>
-          {% else %}
-            <div class="pie" style="background:rgba(255,255,255,.06)"></div>
-          {% endif %}
-        </div>
-        <ul class="legend">
-          {% for r in est.urgencia %}
-            <li><span class="dot" style="background:{{ cor_urg[r.label] }}"></span> {{ rot_urg[r.label] }} <b>{{ r.n }}</b></li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
+<script>
+  (function () {
+    const state = { periodo: {{ f.periodo | tojson }}, grupo_id: {{ (f.grupo_id or '') | tojson }}, di: {{ f.di | tojson }}, df: {{ f.df | tojson }} };
+    const seg = document.getElementById('dash-periodo');
+    const custom = document.getElementById('dash-custom');
+    const di = document.getElementById('dash-di');
+    const df = document.getElementById('dash-df');
+    const obra = document.getElementById('dash-obra');
+    const content = document.getElementById('dash-content');
 
-    <!-- Tipo de mídia: BARRA EMPILHADA 100% -->
-    <div class="card pad">
-      <div class="section-title"><span class="st-ic tint-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.5 6.5"/></svg></span>Por tipo de mídia</div>
-      {% set tipos = est.tipo | selectattr('n') | list %}
-      {% set ttot = tipos | sum(attribute='n') or 1 %}
-      <div class="chart-flex">
-        <svg class="radial" viewBox="0 0 100 100">
-          <g transform="rotate(-90 50 50)">
-            {% for r in tipos %}
-              {% set radius = 44 - loop.index0 * 8.5 %}
-              {% set circ = 6.28318 * radius %}
-              <circle cx="50" cy="50" r="{{ radius }}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="6.5"/>
-              <circle cx="50" cy="50" r="{{ radius }}" fill="none" stroke="{{ cor_tipo[r.label] }}" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="{{ r.n / ttot * circ }} {{ circ }}"/>
-            {% endfor %}
-          </g>
-        </svg>
-        <ul class="legend">
-          {% for r in tipos %}
-            <li><span class="dot" style="background:{{ cor_tipo[r.label] }}"></span> {{ rot_tipo[r.label] }} <b>{{ r.n }} · {{ (r.n / ttot * 100) | round }}%</b></li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
+    function marcar() {
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.p === state.periodo));
+      custom.classList.toggle('show', state.periodo === 'custom');
+    }
 
-  <!-- Atividade | Itens por grupo -->
-  <div class="grid2">
-    <div class="card pad">
-      <div class="section-title"><span class="st-ic tint-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span>Atividade <span class="count">últimos 7 dias</span></div>
-      {% set amax = (est.atividade | max(attribute='n')).n or 1 %}
-      {% set n = est.atividade | length %}
-      {% set pts = [] %}
-      {% for r in est.atividade %}
-        {% set x = (loop.index0 / (n - 1) * 100) if n > 1 else 0 %}
-        {% set _ = pts.append(x ~ ',' ~ (95 - (r.n / amax * 88))) %}
-      {% endfor %}
-      <svg class="area" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="var(--accent)" stop-opacity="0.35"/>
-            <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <polygon points="0,100 {{ pts | join(' ') }} 100,100" fill="url(#ag)"/>
-        <polyline points="{{ pts | join(' ') }}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      </svg>
-      <div class="xlabels">{% for r in est.atividade %}<span>{{ r.label }}</span>{% endfor %}</div>
-  </div>
+    async function aplicar() {
+      const q = new URLSearchParams({ periodo: state.periodo });
+      if (state.grupo_id) q.set('grupo_id', state.grupo_id);
+      if (state.periodo === 'custom') { if (di.value) q.set('di', di.value); if (df.value) q.set('df', df.value); }
+      content.classList.add('loading');
+      try {
+        const r = await fetch('/dashboard/fragmento?' + q.toString());
+        if (!r.ok) throw new Error('http ' + r.status);
+        content.innerHTML = await r.text();
+        history.replaceState(null, '', '/dashboard?' + q.toString());
+      } catch (e) {
+        console.error(e);
+      } finally {
+        content.classList.remove('loading');
+      }
+    }
 
-  <!-- Por grupo: BARRAS HORIZONTAIS (ranking, linha inteira) -->
-  <div class="card pad">
-      <div class="section-title"><span class="st-ic tint-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="13" width="4" height="7" rx="1"/></svg></span>Itens por grupo <span class="count">top 8</span></div>
-      {% if est.por_grupo %}
-        <div class="bars">
-          {% for r in est.por_grupo %}
-            <div class="bar-row">
-              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.label }}">{{ r.label }}</span>
-              <span class="bar-track"><span class="bar-fill" style="width: {{ r.pct }}%"></span></span>
-              <span class="num">{{ r.n }}</span>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty">Sem dados ainda.</div>
-      {% endif %}
-    </div>
-  </div>
+    seg.addEventListener('click', function (e) {
+      const b = e.target.closest('button'); if (!b) return;
+      state.periodo = b.dataset.p; marcar();
+      if (state.periodo === 'custom' && !(di.value && df.value)) return; // espera as duas datas
+      aplicar();
+    });
+    di.addEventListener('change', () => { if (state.periodo === 'custom' && di.value && df.value) aplicar(); });
+    df.addEventListener('change', () => { if (state.periodo === 'custom' && di.value && df.value) aplicar(); });
+    obra.addEventListener('change', () => { state.grupo_id = obra.value; aplicar(); });
+
+    marcar();
+  })();
+</script>
 {% endblock %}

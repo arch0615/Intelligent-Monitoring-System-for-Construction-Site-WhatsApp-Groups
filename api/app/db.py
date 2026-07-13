@@ -111,8 +111,33 @@ def historico_recente(limite: int = 50) -> list[dict[str, Any]]:
         return cur.fetchall()
 
 
-def estatisticas() -> dict[str, Any]:
-    """Métricas agregadas para o dashboard (sobre todo o histórico)."""
+def _cond_periodo(inicio: date | None, fim: date | None, grupo_id: int | None
+                  ) -> tuple[list[str], list[Any]]:
+    """Condições de filtro (período + obra) sobre a tabela mensagens (alias m)."""
+    cond: list[str] = []
+    params: list[Any] = []
+    if inicio is not None:
+        cond.append("m.enviada_em >= %s")
+        params.append(datetime.combine(inicio, datetime.min.time()))
+    if fim is not None:
+        cond.append("m.enviada_em < %s")
+        params.append(datetime.combine(fim, datetime.min.time()) + timedelta(days=1))
+    if grupo_id is not None:
+        cond.append("m.grupo_id = %s")
+        params.append(grupo_id)
+    return cond, params
+
+
+def _where(cond: list[str]) -> str:
+    return ("WHERE " + " AND ".join(cond)) if cond else ""
+
+
+def estatisticas(inicio: date | None = None, fim: date | None = None,
+                 grupo_id: int | None = None) -> dict[str, Any]:
+    """Métricas agregadas para o dashboard, filtradas por período e obra.
+
+    Sem argumentos, cobre todo o histórico (a Atividade cai para os últimos 7 dias).
+    """
     ordem_cat = ["pendencia", "duvida", "decisao"]
     ordem_urg = ["critica", "alta", "media", "baixa"]
     ordem_tipo = ["texto", "audio", "imagem", "video", "documento", "outro"]
@@ -121,37 +146,61 @@ def estatisticas() -> dict[str, Any]:
         mx = max((n for _, n in pares), default=0) or 1
         return [{"label": l, "n": n, "pct": round(n * 100 / mx)} for l, n in pares]
 
+    cond, params = _cond_periodo(inicio, fim, grupo_id)
+    w = _where(cond)
+    # análises herdam o filtro de mensagens via JOIN.
+    base_an = f"FROM analises a JOIN mensagens m ON m.id = a.mensagem_id {w}"
+
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT count(*) n FROM mensagens")
+        cur.execute(f"SELECT count(*) n FROM mensagens m {w}", params)
         total_msgs = cur.fetchone()["n"]
-        cur.execute("SELECT count(*) n FROM analises")
+        cur.execute(f"SELECT count(*) n {base_an}", params)
         total_an = cur.fetchone()["n"]
-        cur.execute("SELECT count(*) n FROM analises WHERE urgencia IN ('critica','alta')")
+
+        cond_crit = cond + ["a.urgencia IN ('critica','alta')"]
+        cur.execute(f"SELECT count(*) n FROM analises a JOIN mensagens m ON m.id = a.mensagem_id {_where(cond_crit)}", params)
         criticos = cur.fetchone()["n"]
+
+        # Grupos ativos (estado de ativação, não depende de período) + quantos têm
+        # itens críticos/altos EM ABERTO no recorte selecionado.
         cur.execute("SELECT count(*) FILTER (WHERE is_active) ativos, count(*) total FROM grupos")
         g = cur.fetchone()
+        cond_alerta = cond + ["a.urgencia IN ('critica','alta')", "a.resolvido = false"]
+        cur.execute(f"SELECT count(DISTINCT m.grupo_id) n FROM analises a JOIN mensagens m ON m.id = a.mensagem_id {_where(cond_alerta)}", params)
+        grupos_com_alerta = cur.fetchone()["n"]
 
-        cur.execute("SELECT categoria, count(*) n FROM analises GROUP BY categoria")
+        cur.execute(f"SELECT a.categoria, count(*) n {base_an} GROUP BY a.categoria", params)
         cat = {r["categoria"]: r["n"] for r in cur.fetchall()}
-        cur.execute("SELECT urgencia, count(*) n FROM analises GROUP BY urgencia")
+        cur.execute(f"SELECT a.urgencia, count(*) n {base_an} GROUP BY a.urgencia", params)
         urg = {r["urgencia"]: r["n"] for r in cur.fetchall()}
-        cur.execute("SELECT tipo, count(*) n FROM mensagens GROUP BY tipo")
+        cur.execute(f"SELECT m.tipo, count(*) n FROM mensagens m {w} GROUP BY m.tipo", params)
         tip = {r["tipo"]: r["n"] for r in cur.fetchall()}
 
-        dias = [date.today() - timedelta(days=i) for i in range(6, -1, -1)]
+        # Atividade diária: dentro do período (limitada a 45 dias); sem período,
+        # mostra os últimos 7 dias.
+        if inicio is not None and fim is not None:
+            d_ini = max(inicio, fim - timedelta(days=44))
+            n_dias = (fim - d_ini).days
+            dias = [d_ini + timedelta(days=i) for i in range(n_dias + 1)]
+        else:
+            dias = [date.today() - timedelta(days=i) for i in range(6, -1, -1)]
+        cond_ativ = list(cond) if cond else ["m.enviada_em::date >= %s"]
+        params_ativ = list(params) if cond else [dias[0]]
         cur.execute(
-            "SELECT enviada_em::date d, count(*) n FROM mensagens WHERE enviada_em::date >= %s GROUP BY d",
-            (dias[0],),
+            f"SELECT m.enviada_em::date d, count(*) n FROM mensagens m {_where(cond_ativ)} GROUP BY d",
+            params_ativ,
         )
         md = {r["d"]: r["n"] for r in cur.fetchall()}
         atividade = com_pct([(d.strftime("%d/%m"), md.get(d, 0)) for d in dias])
 
         cur.execute(
-            """SELECT coalesce(g.nome, g.wa_jid) nome, count(*) n
-               FROM analises a
-               JOIN mensagens m ON m.id = a.mensagem_id
-               JOIN grupos g    ON g.id = m.grupo_id
-               GROUP BY 1 ORDER BY 2 DESC LIMIT 8"""
+            f"""SELECT coalesce(g.nome, g.wa_jid) nome, count(*) n
+                FROM analises a
+                JOIN mensagens m ON m.id = a.mensagem_id
+                JOIN grupos g    ON g.id = m.grupo_id
+                {w}
+                GROUP BY 1 ORDER BY 2 DESC LIMIT 8""",
+            params,
         )
         por_grupo = com_pct([(r["nome"], r["n"]) for r in cur.fetchall()])
 
@@ -161,6 +210,7 @@ def estatisticas() -> dict[str, Any]:
         "criticos": criticos,
         "grupos_ativos": g["ativos"],
         "grupos_total": g["total"],
+        "grupos_com_alerta": grupos_com_alerta,
         "categoria": com_pct([(c, cat.get(c, 0)) for c in ordem_cat]),
         "urgencia": com_pct([(u, urg.get(u, 0)) for u in ordem_urg]),
         "tipo": com_pct([(t, tip.get(t, 0)) for t in ordem_tipo]),
