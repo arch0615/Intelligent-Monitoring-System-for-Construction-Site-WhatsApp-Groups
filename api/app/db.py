@@ -364,3 +364,64 @@ def adicionar_lista(analise_id: int | None = None, todos: bool = False) -> int:
         n = cur.rowcount
         conn.commit()
         return n
+
+
+# ===========================================================================
+# Incidentes de saúde — histórico de indisponibilidade dos componentes.
+# Todas as funções são "best-effort": se o banco estiver fora (que pode ser o
+# próprio incidente), elas apenas logam e não derrubam o monitor.
+# ===========================================================================
+def abrir_incidente(componente: str, inicio: datetime) -> int | None:
+    """Registra o início de um incidente. Devolve o id (ou None em falha)."""
+    try:
+        with _connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO incidentes_saude (componente, inicio) VALUES (%s, %s) RETURNING id",
+                (componente, inicio),
+            )
+            iid = cur.fetchone()["id"]
+            conn.commit()
+            return iid
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def marcar_incidente_notificado(incidente_id: int) -> None:
+    try:
+        with _connect() as conn, conn.cursor() as cur:
+            cur.execute("UPDATE incidentes_saude SET notificado=true WHERE id=%s", (incidente_id,))
+            conn.commit()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def fechar_incidente(incidente_id: int | None, componente: str, inicio: datetime,
+                     fim: datetime, notificado: bool) -> None:
+    """Fecha o incidente (fim). Se não houver id (falha ao abrir), insere já fechado."""
+    try:
+        with _connect() as conn, conn.cursor() as cur:
+            if incidente_id:
+                cur.execute("UPDATE incidentes_saude SET fim=%s WHERE id=%s", (fim, incidente_id))
+            else:
+                cur.execute(
+                    """INSERT INTO incidentes_saude (componente, inicio, fim, notificado)
+                       VALUES (%s, %s, %s, %s)""",
+                    (componente, inicio, fim, notificado),
+                )
+            conn.commit()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def incidentes_recentes(limite: int = 10) -> list[dict[str, Any]]:
+    """Últimos incidentes (abertos e fechados), mais recentes primeiro."""
+    sql = """
+        SELECT id, componente, inicio, fim, notificado,
+               EXTRACT(EPOCH FROM (COALESCE(fim, now()) - inicio))::bigint AS duracao_seg
+        FROM incidentes_saude
+        ORDER BY inicio DESC
+        LIMIT %s
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (limite,))
+        return cur.fetchall()

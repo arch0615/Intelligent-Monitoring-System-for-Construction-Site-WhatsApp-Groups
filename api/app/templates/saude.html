@@ -13,6 +13,14 @@
   </div>
 {% endmacro %}
 
+{% macro dur(seg) %}
+  {%- set m = (seg // 60) | int -%}
+  {%- if m < 1 %}menos de 1 min
+  {%- elif m < 60 %}{{ m }} min
+  {%- else %}{{ (m // 60) | int }}h{{ '%02d'|format(m % 60) }}
+  {%- endif -%}
+{% endmacro %}
+
 {% block conteudo %}
   <div class="stats" style="grid-template-columns:1fr">
     <div class="stat {{ 'accent' if saude.status == 'ok' else 'crit' }}">
@@ -33,5 +41,31 @@
         "Pipeline de processamento",
         saude.pipeline.vivo,
         ("último heartbeat há " ~ saude.pipeline.ha_segundos ~ "s") if saude.pipeline.ha_segundos is not none else "sem heartbeat") }}
+    <div class="meta" style="margin-top:12px">
+      🔔 Alertas automáticos por Telegram quando um componente fica fora por mais de {{ alerta_min }} min.
+    </div>
+  </div>
+
+  <div class="card pad">
+    <div class="section-title">Histórico de incidentes <span class="count">últimos {{ incidentes|length }}</span></div>
+    {% if incidentes %}
+      {% for i in incidentes %}
+        <div class="item" style="align-items:center">
+          <div class="body">
+            <div class="txt">{{ i.componente }}</div>
+            <div class="meta">
+              <span>🕒 {{ i.inicio.strftime("%d/%m %H:%M") }}
+                {% if i.fim %}→ {{ i.fim.strftime("%d/%m %H:%M") }}{% else %}→ agora{% endif %}
+              </span>
+              <span>· duração {{ dur(i.duracao_seg) }}</span>
+              {% if i.notificado %}<span>· 🔔 alerta enviado</span>{% endif %}
+            </div>
+          </div>
+          <span class="pill {{ 'down' if not i.fim else 'ok' }}">{{ "Em aberto" if not i.fim else "Resolvido" }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">Nenhum incidente registrado. 🎉</div>
+    {% endif %}
   </div>
 {% endblock %}

@@ -202,7 +202,13 @@ def grupos_html(request: Request, usuario: dict = Depends(auth.requer_login)):
 @app.get("/saude", response_class=HTMLResponse)
 def saude_html(request: Request, usuario: dict = Depends(auth.requer_login)):
     return templates.TemplateResponse(
-        request, "saude.html", {"saude": health.status(), "usuario": usuario}
+        request, "saude.html",
+        {
+            "saude": health.status(),
+            "incidentes": db.incidentes_recentes(),
+            "alerta_min": config.SAUDE_ALERTA_MINUTOS,
+            "usuario": usuario,
+        },
     )
 
 

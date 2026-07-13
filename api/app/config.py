@@ -39,6 +39,12 @@ class Config:
     RELATORIO_HORA = int(os.environ.get("RELATORIO_HORA", "18"))
     RELATORIO_MINUTO = int(os.environ.get("RELATORIO_MINUTO", "0"))
 
+    # Monitor de saúde (alertas por Telegram). Dispara um alerta quando um
+    # componente fica fora por mais que SAUDE_ALERTA_MINUTOS; verifica a cada
+    # SAUDE_CHECK_SEGUNDOS. Evita repetir alerta do mesmo incidente.
+    SAUDE_ALERTA_MINUTOS = int(os.environ.get("SAUDE_ALERTA_MINUTOS", "5"))
+    SAUDE_CHECK_SEGUNDOS = int(os.environ.get("SAUDE_CHECK_SEGUNDOS", "60"))
+
     # Retenção de mídia (Etapa 5) — dias após os quais o binário é removido do
     # disco (metadados e texto/análise permanecem no banco). 0 = nunca arquivar.
     RETENCAO_MIDIA_DIAS = int(os.environ.get("RETENCAO_MIDIA_DIAS", "90"))
