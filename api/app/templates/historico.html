@@ -1,38 +1,160 @@
 {% extends "base.html" %}
 {% block titulo %}Histórico{% endblock %}
 {% block cabecalho %}Consulta de histórico{% endblock %}
-{% block subcabecalho %}Busca no conteúdo de mensagens, transcrições e documentos{% endblock %}
+{% block subcabecalho %}Resumo executivo por IA e busca no conteúdo das mensagens{% endblock %}
 
 {% block conteudo %}
-  <div class="card pad" style="margin-bottom:18px">
-    <form method="get" action="/historico" class="search">
-      <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento, medição, prazo, andaime..." autofocus>
-      <button class="btn" type="submit">Buscar</button>
-    </form>
-  </div>
+<style>
+  .resumo-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .resumo-toolbar .field { display:flex; flex-direction:column; gap:4px; }
+  .resumo-toolbar label { font-size:11.5px; color:var(--muted); font-weight:600; }
+  #resumo-status { color:var(--muted); font-size:13.5px; margin-top:14px; display:none; }
+  #resumo-status.show { display:block; }
+  .spin { display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; margin-right:7px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
 
-  <div class="card pad">
-    {% if q %}
-      <div class="section-title">Resultados <span class="count">{{ resultados|length }} para “{{ q }}”</span></div>
-    {% else %}
-      <div class="section-title">Mensagens recentes <span class="count">últimas {{ resultados|length }}</span></div>
-    {% endif %}
-    {% if resultados %}
-      {% for r in resultados %}
-        <div class="item">
-          <div class="body">
-            <div class="txt">{{ r.texto or "(sem texto)" }}</div>
-            <div class="meta">
-              <span>📍 {{ r.grupo_nome or "grupo" }}</span>
-              {% if r.remetente %}<span>· {{ r.remetente }}</span>{% endif %}
-              <span>· {{ r.tipo }}</span>
-              <span>· {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}</span>
-            </div>
+  .rblocks { display:grid; gap:14px; margin-top:16px; }
+  .rblock { border:1px solid var(--line); border-radius:12px; padding:16px 18px; border-left-width:4px; }
+  .rblock h4 { margin:0 0 9px; font-size:13.5px; text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:8px; }
+  .rblock p { margin:0; line-height:1.55; color:var(--ink); }
+  .rblock ul { margin:0; padding-left:20px; line-height:1.6; }
+  .rblock ul li { margin:3px 0; }
+  .rblock .vazio { color:var(--muted); font-style:italic; }
+
+  .rb-situacao   { border-left-color:#a78bfa; } .rb-situacao h4   { color:#a78bfa; }
+  .rb-avancos    { border-left-color:#34d399; } .rb-avancos h4    { color:#34d399; }
+  .rb-atencao    { border-left-color:#f87171; } .rb-atencao h4    { color:#f87171; }
+  .rb-decisoes   { border-left-color:#60a5fa; } .rb-decisoes h4   { color:#60a5fa; }
+  .rb-proximo    { border-left-color:#0f1830; background:#0a1122; }
+  .rb-proximo h4 { color:#cbd5e1; } .rb-proximo p { color:#fff; font-weight:600; }
+  .resumo-meta { color:var(--muted); font-size:12.5px; margin-top:10px; }
+</style>
+
+<!-- Resumo executivo por IA -->
+<div class="card pad" style="margin-bottom:18px">
+  <div class="section-title"><span class="st-ic tint-purple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/></svg></span>Resumo por IA <span class="count">Claude analisa o período</span></div>
+  <form id="resumo-form" class="resumo-toolbar" autocomplete="off">
+    <div class="field">
+      <label for="r-obra">Obra</label>
+      <select id="r-obra" name="grupo_id">
+        <option value="">Todas as obras</option>
+        {% for g in grupos %}<option value="{{ g.id }}">{{ g.nome or g.wa_jid }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="r-ini">De</label>
+      <input type="date" id="r-ini" name="data_inicio">
+    </div>
+    <div class="field">
+      <label for="r-fim">Até</label>
+      <input type="date" id="r-fim" name="data_fim">
+    </div>
+    <div class="field">
+      <button class="btn" type="submit" id="r-btn">Gerar resumo</button>
+    </div>
+  </form>
+  <div id="resumo-status"></div>
+  <div id="resumo-result"></div>
+</div>
+
+<!-- Busca exata (full-text) -->
+<div class="card pad" style="margin-bottom:18px">
+  <div class="section-title"><span class="st-ic tint-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg></span>Busca exata</div>
+  <form method="get" action="/historico" class="search" style="margin-top:4px">
+    <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento, medição, prazo, andaime...">
+    <button class="btn" type="submit">Buscar</button>
+  </form>
+</div>
+
+<div class="card pad">
+  {% if q %}
+    <div class="section-title">Resultados <span class="count">{{ resultados|length }} para “{{ q }}”</span></div>
+  {% else %}
+    <div class="section-title">Mensagens recentes <span class="count">últimas {{ resultados|length }}</span></div>
+  {% endif %}
+  {% if resultados %}
+    {% for r in resultados %}
+      <div class="item">
+        <div class="body">
+          <div class="txt">{{ r.texto or "(sem texto)" }}</div>
+          <div class="meta">
+            <span>📍 {{ r.grupo_nome or "grupo" }}</span>
+            {% if r.remetente %}<span>· {{ r.remetente }}</span>{% endif %}
+            <span>· {{ r.tipo }}</span>
+            <span>· {{ r.enviada_em.strftime("%d/%m/%Y %H:%M") }}</span>
           </div>
         </div>
-      {% endfor %}
-    {% else %}
-      <div class="empty">{{ "Nenhum registro encontrado." if q else "Ainda não há mensagens." }}</div>
-    {% endif %}
-  </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">{{ "Nenhum registro encontrado." if q else "Ainda não há mensagens." }}</div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    // Datas padrão: do 1º dia do mês até hoje.
+    const hoje = new Date();
+    const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.getElementById('r-fim').value = iso(hoje);
+    document.getElementById('r-ini').value = iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+
+    const form = document.getElementById('resumo-form');
+    const btn = document.getElementById('r-btn');
+    const status = document.getElementById('resumo-status');
+    const result = document.getElementById('resumo-result');
+
+    function bloco(cls, titulo, conteudo, lista) {
+      const d = document.createElement('div');
+      d.className = 'rblock ' + cls;
+      const h = document.createElement('h4');
+      h.textContent = titulo;
+      d.appendChild(h);
+      if (lista) {
+        if (conteudo && conteudo.length) {
+          const ul = document.createElement('ul');
+          conteudo.forEach(function (t) { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+          d.appendChild(ul);
+        } else {
+          const p = document.createElement('p'); p.className = 'vazio'; p.textContent = 'Nada a destacar.'; d.appendChild(p);
+        }
+      } else {
+        const p = document.createElement('p'); p.textContent = conteudo || '—'; d.appendChild(p);
+      }
+      return d;
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      btn.disabled = true;
+      result.innerHTML = '';
+      status.className = 'show';
+      status.innerHTML = '<span class="spin"></span> Gerando resumo com a IA… isso pode levar alguns segundos.';
+      try {
+        const r = await fetch('/api/historico/resumo', { method: 'POST', body: new FormData(form) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.detail || 'Falha na requisição.');
+        if (d.erro) { status.textContent = '⚠️ ' + d.erro; btn.disabled = false; return; }
+        status.className = '';
+        const wrap = document.createElement('div');
+        wrap.className = 'rblocks';
+        wrap.appendChild(bloco('rb-situacao', '🟣 Situação geral', d.situacao_geral, false));
+        wrap.appendChild(bloco('rb-avancos', '✅ Principais avanços', d.principais_avancos, true));
+        wrap.appendChild(bloco('rb-atencao', '⚠️ Pontos de atenção', d.pontos_atencao, true));
+        wrap.appendChild(bloco('rb-decisoes', '→ Decisões-chave', d.decisoes_chave, true));
+        wrap.appendChild(bloco('rb-proximo', '🎯 Próximo passo', d.proximo_passo, false));
+        const meta = document.createElement('div');
+        meta.className = 'resumo-meta';
+        meta.textContent = 'Baseado em ' + d.meta.total_itens + ' item(ns) de ' + d.meta.inicio + ' a ' + d.meta.fim + '.';
+        wrap.appendChild(meta);
+        result.appendChild(wrap);
+      } catch (err) {
+        status.className = 'show';
+        status.textContent = '⚠️ Não foi possível gerar o resumo. Tente novamente.';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  })();
+</script>
 {% endblock %}

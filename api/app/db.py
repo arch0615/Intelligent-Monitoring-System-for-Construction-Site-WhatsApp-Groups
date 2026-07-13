@@ -413,6 +413,31 @@ def fechar_incidente(incidente_id: int | None, componente: str, inicio: datetime
         pass
 
 
+def corpus_para_resumo(grupo_id: int | None, inicio: date, fim: date,
+                       limite: int = 300) -> list[dict[str, Any]]:
+    """Itens analisados (pendências/dúvidas/decisões) de uma obra em um intervalo,
+    em ordem cronológica — matéria-prima do resumo executivo por IA (spec #3).
+
+    O recorte é [inicio 00:00, fim+1 00:00) sobre a data de envio da mensagem.
+    """
+    ini = datetime.combine(inicio, datetime.min.time())
+    f = datetime.combine(fim, datetime.min.time()) + timedelta(days=1)
+    sql = """
+        SELECT a.categoria, a.urgencia, a.resumo, m.enviada_em,
+               g.nome AS grupo_nome
+        FROM analises a
+        JOIN mensagens m ON m.id = a.mensagem_id
+        JOIN grupos g    ON g.id = m.grupo_id
+        WHERE m.enviada_em >= %s AND m.enviada_em < %s
+          AND (%s::bigint IS NULL OR g.id = %s::bigint)
+        ORDER BY m.enviada_em
+        LIMIT %s
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (ini, f, grupo_id, grupo_id, limite))
+        return cur.fetchall()
+
+
 def incidentes_recentes(limite: int = 10) -> list[dict[str, Any]]:
     """Últimos incidentes (abertos e fechados), mais recentes primeiro."""
     sql = """

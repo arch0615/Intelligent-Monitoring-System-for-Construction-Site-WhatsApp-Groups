@@ -35,6 +35,10 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
+    # API Claude — usada para o resumo executivo do histórico (spec #3).
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+    CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-opus-4-8")
+
     # Horário do relatório diário (cron). Padrão: 18h, horário do servidor.
     RELATORIO_HORA = int(os.environ.get("RELATORIO_HORA", "18"))
     RELATORIO_MINUTO = int(os.environ.get("RELATORIO_MINUTO", "0"))

@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, db, health, maintenance, reports, scheduler
+from . import auth, db, health, maintenance, reports, resumo_ia, scheduler
 from .config import config, logger
 
 templates = Jinja2Templates(directory="app/templates")
@@ -188,8 +188,27 @@ def historico_html(request: Request, q: str = Query(""), usuario: dict = Depends
     busca = q.strip()
     resultados = db.buscar_historico(busca) if busca else db.historico_recente()
     return templates.TemplateResponse(
-        request, "historico.html", {"q": q, "resultados": resultados, "usuario": usuario}
+        request, "historico.html",
+        {"q": q, "resultados": resultados, "grupos": db.listar_grupos(), "usuario": usuario},
     )
+
+
+@app.post("/api/historico/resumo")
+def api_historico_resumo(
+    grupo_id: str | None = Form(None),
+    data_inicio: str | None = Form(None),
+    data_fim: str | None = Form(None),
+    usuario: dict = Depends(auth.requer_login),
+):
+    hoje = date.today()
+    try:
+        ini = date.fromisoformat(data_inicio) if data_inicio else hoje.replace(day=1)
+        fim = date.fromisoformat(data_fim) if data_fim else hoje
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Datas inválidas.")
+    if ini > fim:
+        ini, fim = fim, ini
+    return resumo_ia.gerar_resumo(_parse_grupo_id(grupo_id), ini, fim)
 
 
 @app.get("/grupos", response_class=HTMLResponse)
