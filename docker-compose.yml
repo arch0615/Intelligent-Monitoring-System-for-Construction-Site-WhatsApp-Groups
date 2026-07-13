@@ -10,7 +10,9 @@
 # =====================================================================
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 = PostgreSQL 16 + extensão pgvector (busca semântica).
+    # Compatível com o volume existente (mesmo major do Postgres).
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -86,6 +88,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      # Cache do modelo de embeddings (ONNX) — evita rebaixar a cada recriação.
+      - ./api/models:/app/models
     # Não publicado na internet: acesso externo só via Caddy (HTTPS).
     # 127.0.0.1:8000 fica disponível apenas no servidor (debug/health local).
     ports:

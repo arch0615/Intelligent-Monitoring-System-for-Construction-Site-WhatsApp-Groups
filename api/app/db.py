@@ -488,6 +488,86 @@ def corpus_para_resumo(grupo_id: int | None, inicio: date, fim: date,
         return cur.fetchall()
 
 
+# ===========================================================================
+# Busca semântica (RAG) — embeddings + histórico de perguntas.
+# ===========================================================================
+def mensagens_sem_embedding(limite: int = 128) -> list[dict[str, Any]]:
+    """Mensagens com texto e ainda sem embedding (fila de indexação)."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """SELECT id, texto FROM mensagens
+               WHERE embedding IS NULL AND texto IS NOT NULL AND texto <> ''
+               ORDER BY id LIMIT %s""",
+            (limite,),
+        )
+        return cur.fetchall()
+
+
+def salvar_embeddings(pares: list[tuple[int, list[float]]]) -> None:
+    """Grava os embeddings (id da mensagem -> vetor)."""
+    if not pares:
+        return
+    with _connect() as conn, conn.cursor() as cur:
+        cur.executemany(
+            "UPDATE mensagens SET embedding = %s::vector WHERE id = %s",
+            [(str(vec), mid) for mid, vec in pares],
+        )
+        conn.commit()
+
+
+def contar_embeddings() -> dict[str, int]:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """SELECT count(*) FILTER (WHERE embedding IS NOT NULL) AS indexadas,
+                      count(*) FILTER (WHERE texto IS NOT NULL AND texto <> '') AS com_texto
+               FROM mensagens"""
+        )
+        return cur.fetchone()
+
+
+def busca_semantica(qvec: list[float], inicio: date | None = None, fim: date | None = None,
+                    grupo_id: int | None = None, k: int = 8) -> list[dict[str, Any]]:
+    """Top-k mensagens mais próximas do vetor da pergunta (distância de cosseno),
+    respeitando filtros de obra e período."""
+    cond, fparams = _cond_periodo(inicio, fim, grupo_id)
+    cond = ["m.embedding IS NOT NULL"] + cond
+    qs = str(qvec)
+    sql = f"""
+        SELECT m.id, m.texto, m.tipo, m.enviada_em, g.nome AS grupo_nome,
+               r.nome_push AS remetente,
+               1 - (m.embedding <=> %s::vector) AS score
+        FROM mensagens m
+        JOIN grupos g ON g.id = m.grupo_id
+        LEFT JOIN remetentes r ON r.id = m.remetente_id
+        WHERE {' AND '.join(cond)}
+        ORDER BY m.embedding <=> %s::vector
+        LIMIT %s
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, [qs, *fparams, qs, k])
+        return cur.fetchall()
+
+
+def registrar_pergunta(usuario_id: int | None, pergunta: str) -> None:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO perguntas_rag (usuario_id, pergunta) VALUES (%s, %s)",
+            (usuario_id, pergunta.strip()),
+        )
+        conn.commit()
+
+
+def ultimas_perguntas(limite: int = 5) -> list[dict[str, Any]]:
+    """Últimas perguntas distintas, mais recentes primeiro."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """SELECT pergunta, max(criado_em) AS quando
+               FROM perguntas_rag GROUP BY pergunta ORDER BY quando DESC LIMIT %s""",
+            (limite,),
+        )
+        return cur.fetchall()
+
+
 def incidentes_recentes(limite: int = 10) -> list[dict[str, Any]]:
     """Últimos incidentes (abertos e fechados), mais recentes primeiro."""
     sql = """

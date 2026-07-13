@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from . import maintenance, reports, saude_monitor
+from . import indexer, maintenance, reports, saude_monitor
 from .config import config, logger
 
 scheduler = BackgroundScheduler(timezone=config.TZ)
@@ -27,6 +27,14 @@ def _job_retencao_midia() -> None:
 
 def _job_monitor_saude() -> None:
     saude_monitor.verificar()
+
+
+def _job_indexar_embeddings() -> None:
+    """Indexa (embeddings) as mensagens novas para a busca semântica."""
+    try:
+        indexer.indexar_pendentes()
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Indexação de embeddings falhou: %s", err)
 
 
 def iniciar() -> None:
@@ -48,6 +56,13 @@ def iniciar() -> None:
         _job_monitor_saude,
         trigger=IntervalTrigger(seconds=config.SAUDE_CHECK_SEGUNDOS),
         id="monitor_saude",
+        replace_existing=True,
+    )
+    # Indexação incremental de embeddings (busca semântica): a cada 3 min.
+    scheduler.add_job(
+        _job_indexar_embeddings,
+        trigger=IntervalTrigger(seconds=180),
+        id="indexar_embeddings",
         replace_existing=True,
     )
     scheduler.start()

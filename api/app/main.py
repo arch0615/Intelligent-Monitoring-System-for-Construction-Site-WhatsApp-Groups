@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, db, health, maintenance, reports, resumo_ia, scheduler
+from . import auth, db, health, maintenance, rag, reports, resumo_ia, scheduler
 from .config import config, logger
 
 templates = Jinja2Templates(directory="app/templates")
@@ -229,8 +229,32 @@ def historico_html(request: Request, q: str = Query(""), usuario: dict = Depends
     resultados = db.buscar_historico(busca) if busca else db.historico_recente()
     return templates.TemplateResponse(
         request, "historico.html",
-        {"q": q, "resultados": resultados, "grupos": db.listar_grupos(), "usuario": usuario},
+        {
+            "q": q, "resultados": resultados, "grupos": db.listar_grupos(),
+            "ultimas_perguntas": db.ultimas_perguntas(), "usuario": usuario,
+        },
     )
+
+
+@app.post("/api/historico/perguntar")
+def api_historico_perguntar(
+    pergunta: str = Form(...),
+    grupo_id: str | None = Form(None),
+    data_inicio: str | None = Form(None),
+    data_fim: str | None = Form(None),
+    usuario: dict = Depends(auth.requer_login),
+):
+    ini = fim = None
+    try:
+        if data_inicio:
+            ini = date.fromisoformat(data_inicio)
+        if data_fim:
+            fim = date.fromisoformat(data_fim)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Datas inválidas.")
+    if ini and fim and ini > fim:
+        ini, fim = fim, ini
+    return rag.perguntar(pergunta, ini, fim, _parse_grupo_id(grupo_id), usuario["id"])
 
 
 @app.post("/api/historico/resumo")
