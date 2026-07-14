@@ -127,28 +127,41 @@
       {% set x = (loop.index0 / (n - 1) * 100) if n > 1 else 0 %}
       {% set _ = pts.append(x ~ ',' ~ (95 - (r.n / amax * 88))) %}
     {% endfor %}
-    <svg class="area" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--accent)" stop-opacity="0.35"/>
-          <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <polygon points="0,100 {{ pts | join(' ') }} 100,100" fill="url(#ag)"/>
-      <polyline points="{{ pts | join(' ') }}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-    </svg>
-    <div class="xlabels">{% for r in est.atividade %}<span>{{ r.label if loop.index0 % step == 0 or loop.last else '' }}</span>{% endfor %}</div>
+    <div class="area-wrap">
+      <div class="yaxis">
+        <span>{{ amax }}</span>
+        <span>{{ (amax * 0.5) | round | int }}</span>
+        <span>0</span>
+      </div>
+      <div class="plot">
+        <svg class="area" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#34d399" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="gl" x1="0" y1="7"  x2="100" y2="7"/>
+          <line class="gl" x1="0" y1="51" x2="100" y2="51"/>
+          <line class="gl" x1="0" y1="95" x2="100" y2="95"/>
+          <polygon points="0,95 {{ pts | join(' ') }} 100,95" fill="url(#ag)"/>
+          <polyline points="{{ pts | join(' ') }}" fill="none" stroke="#34d399" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="xlabels">{% for r in est.atividade %}<span>{{ r.label if loop.index0 % step == 0 or loop.last else '' }}</span>{% endfor %}</div>
+      </div>
+    </div>
   </div>
 
   <!-- Por grupo: BARRAS HORIZONTAIS -->
   <div class="card pad">
     <div class="section-title"><span class="st-ic tint-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="13" width="4" height="7" rx="1"/></svg></span>Itens por grupo <span class="count">top 8</span></div>
+    {% set cor_grupo = ["#3b82f6", "#34d399", "#a78bfa", "#fb923c", "#f472b6", "#38bdf8", "#fbbf24", "#f87171"] %}
     {% if est.por_grupo and est.por_grupo | sum(attribute='n') %}
       <div class="bars">
         {% for r in est.por_grupo %}
           <div class="bar-row">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.label }}">{{ r.label }}</span>
-            <span class="bar-track"><span class="bar-fill" style="width: {{ r.pct }}%"></span></span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.label }}"><span class="dot" style="background:{{ cor_grupo[loop.index0 % 8] }}"></span> {{ r.label }}</span>
+            <span class="bar-track"><span class="bar-fill" style="width: {{ r.pct }}%; background: {{ cor_grupo[loop.index0 % 8] }}"></span></span>
             <span class="num">{{ r.n }}</span>
           </div>
         {% endfor %}

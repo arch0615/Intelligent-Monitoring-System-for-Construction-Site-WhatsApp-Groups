@@ -112,6 +112,7 @@
     <form method="get" action="/historico" class="search">
       <input type="text" name="q" value="{{ q }}" placeholder="Ex.: cimento, medição, prazo, andaime...">
       <button class="btn" type="submit">Buscar</button>
+      <a class="btn ghost" href="/historico/pdf" onclick="this.href='/historico/pdf'+(location.search.includes('q=')?location.search:'')">⭳ Exportar PDF</a>
     </form>
   </div>
   <div class="card pad">

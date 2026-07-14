@@ -33,6 +33,7 @@
       <option value="">Todas as obras</option>
       {% for g in grupos %}<option value="{{ g.id }}" {% if f.grupo_id == g.id %}selected{% endif %}>{{ g.nome or g.wa_jid }}</option>{% endfor %}
     </select>
+    <a class="btn ghost" href="/dashboard/pdf" onclick="this.href='/dashboard/pdf'+location.search">⭳ Exportar PDF</a>
   </div>
 </div>
 

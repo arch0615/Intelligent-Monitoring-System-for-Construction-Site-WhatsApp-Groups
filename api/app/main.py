@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, db, health, maintenance, rag, reports, resumo_ia, scheduler
+from . import auth, db, health, maintenance, pdf, rag, reports, resumo_ia, scheduler
 from .config import config, logger
 
 templates = Jinja2Templates(directory="app/templates")
@@ -70,7 +70,7 @@ def login(request: Request, email: str = Form(...), senha: str = Form(...)):
             request, "login.html", {"erro": "E-mail ou senha incorretos."}, status_code=401
         )
     request.session["user_id"] = u["id"]
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @app.get("/register", response_class=HTMLResponse)
@@ -344,6 +344,70 @@ def api_lista_toggle(item_id: int, resolver: bool = Form(...),
         "resolvido_em": novo["resolvido_em"].strftime("%d/%m/%Y") if novo["resolvido_em"] else None,
         "por": usuario["nome"] if novo["resolvido"] else None,
     }
+
+
+# ============================ Exportação PDF (protegido) =================
+def _nome_obra(gid: int | None) -> str:
+    if gid is None:
+        return "Todas as obras"
+    for g in db.listar_grupos():
+        if g["id"] == gid:
+            return g["nome"] or g["wa_jid"]
+    return f"Obra {gid}"
+
+
+def _pdf_resp(conteudo: bytes, nome: str) -> Response:
+    return Response(
+        content=conteudo, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'},
+    )
+
+
+@app.get("/lista-mae/pdf")
+def lista_mae_pdf(status: str = "aberto", urgencia: str = "", grupo_id: str | None = None,
+                  categoria: str = "", usuario: dict = Depends(auth.requer_login)):
+    gid = _parse_grupo_id(grupo_id)
+    urg = urgencia if urgencia in db._URGENCIAS else None
+    cat = categoria if categoria in db._CATEGORIAS else None
+    st = status if status in ("aberto", "resolvidos", "todos") else "aberto"
+    itens = db.lista_mae_itens(st, urg, gid, cat)
+    prog = db.lista_mae_progresso(urg, gid, cat)
+    rot_st = {"aberto": "Em aberto", "resolvidos": "Resolvidos", "todos": "Todos"}[st]
+    sub = f"Obra: {_nome_obra(gid)}  |  Status: {rot_st}"
+    if urg:
+        sub += f"  |  Urgencia: {urg}"
+    if cat:
+        sub += f"  |  Categoria: {cat}"
+    return _pdf_resp(pdf.lista_mae(itens, prog, sub), "lista-mae.pdf")
+
+
+@app.get("/relatorio/pdf")
+def relatorio_pdf(data: str | None = None, grupo_id: str | None = None,
+                  usuario: dict = Depends(auth.requer_login)):
+    gid = _parse_grupo_id(grupo_id)
+    rel = db.relatorio_do_dia(_parse_data(data), gid)
+    sub = f"Dia: {rel['dia']}  |  Obra: {_nome_obra(gid)}"
+    return _pdf_resp(pdf.relatorio(rel, sub), f"relatorio-{rel['dia']}.pdf")
+
+
+@app.get("/dashboard/pdf")
+def dashboard_pdf(periodo: str = "todos", grupo_id: str | None = None, di: str | None = None,
+                  df: str | None = None, usuario: dict = Depends(auth.requer_login)):
+    gid = _parse_grupo_id(grupo_id)
+    ini, fim = _periodo_intervalo(periodo, di, df)
+    est = db.estatisticas(ini, fim, gid)
+    rot_p = {"todos": "Todo o periodo", "hoje": "Hoje", "7d": "Ultimos 7 dias",
+             "30d": "Ultimos 30 dias", "custom": f"{di} a {df}"}.get(periodo, "Todo o periodo")
+    sub = f"Periodo: {rot_p}  |  Obra: {_nome_obra(gid)}"
+    return _pdf_resp(pdf.dashboard(est, sub), "dashboard.pdf")
+
+
+@app.get("/historico/pdf")
+def historico_pdf(q: str = Query(""), usuario: dict = Depends(auth.requer_login)):
+    busca = q.strip()
+    resultados = db.buscar_historico(busca) if busca else db.historico_recente()
+    sub = f'Busca: "{busca}"' if busca else "Mensagens recentes"
+    return _pdf_resp(pdf.historico(resultados, sub), "historico.pdf")
 
 
 # ============================== API (protegido) ==========================
