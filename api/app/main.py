@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from datetime import date, timedelta
+from urllib.parse import urlencode
 
 import psycopg
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
@@ -302,23 +303,84 @@ def grupos_toggle(grupo_id: int, ativo: bool = Form(...), usuario: dict = Depend
 
 
 # ============================= Lista Mãe (protegido) =====================
+_POR_PAGINA_OPCOES = [10, 25, 50, 100]
+
+
+def _qs(d: dict, *remover: str) -> str:
+    """Query string a partir de um dict, removendo chaves e valores vazios."""
+    return urlencode({k: v for k, v in d.items() if k not in remover and v not in (None, "")})
+
+
+def _paginas(atual: int, total: int) -> list[int | None]:
+    """Sequência de páginas para a barra de paginação (None = reticências)."""
+    if total <= 7:
+        return list(range(1, total + 1))
+    marcos = sorted({1, total, atual, atual - 1, atual + 1} & set(range(1, total + 1)))
+    saida: list[int | None] = []
+    anterior = 0
+    for p in marcos:
+        if p - anterior > 1:
+            saida.append(None)
+        saida.append(p)
+        anterior = p
+    return saida
+
+
 @app.get("/lista-mae", response_class=HTMLResponse)
 def lista_mae_html(request: Request, status: str = "aberto", urgencia: str = "",
                    grupo_id: str | None = None, categoria: str = "",
+                   pagina: int = 1, por_pagina: int = 25,
+                   pagina_novos: int = 1, por_pagina_novos: int = 25,
                    usuario: dict = Depends(auth.requer_login)):
     gid = _parse_grupo_id(grupo_id)
     urg = urgencia if urgencia in db._URGENCIAS else None
     cat = categoria if categoria in db._CATEGORIAS else None
     st = status if status in ("aberto", "resolvidos", "todos") else "aberto"
+    por = por_pagina if por_pagina in _POR_PAGINA_OPCOES else 25
+    por_n = por_pagina_novos if por_pagina_novos in _POR_PAGINA_OPCOES else 25
+
+    # Lista Mãe (principal)
+    total = db.lista_mae_contar(st, urg, gid, cat)
+    total_paginas = max(1, (total + por - 1) // por)
+    pag = min(max(pagina, 1), total_paginas)
+    offset = (pag - 1) * por
+    itens = db.lista_mae_itens(st, urg, gid, cat, limit=por, offset=offset)
+
+    # Novos itens (inbox de triagem)
+    total_n = db.lista_mae_novos_contar()
+    total_paginas_n = max(1, (total_n + por_n - 1) // por_n)
+    pag_n = min(max(pagina_novos, 1), total_paginas_n)
+    offset_n = (pag_n - 1) * por_n
+    novos = db.lista_mae_novos(limit=por_n, offset=offset_n)
+
+    # Estado completo — preserva as duas paginações ao navegar em qualquer uma.
+    estado = {
+        "status": st, "urgencia": urgencia, "grupo_id": gid if gid is not None else "",
+        "categoria": categoria, "por_pagina": por, "pagina": pag,
+        "por_pagina_novos": por_n, "pagina_novos": pag_n,
+    }
+
     return templates.TemplateResponse(
         request, "lista_mae.html",
         {
             "usuario": usuario,
-            "itens": db.lista_mae_itens(st, urg, gid, cat),
-            "novos": db.lista_mae_novos(),
+            "itens": itens,
+            "novos": novos,
             "progresso": db.lista_mae_progresso(urg, gid, cat),
             "grupos": db.listar_grupos(),
             "f": {"status": st, "urgencia": urgencia, "grupo_id": gid, "categoria": categoria},
+            "pag": {
+                "total": total, "pagina": pag, "por_pagina": por, "total_paginas": total_paginas,
+                "offset": offset, "opcoes": _POR_PAGINA_OPCOES, "paginas": _paginas(pag, total_paginas),
+                "base": _qs(estado, "pagina"),
+                "base_pp": _qs(estado, "pagina", "por_pagina"),
+            },
+            "pag_n": {
+                "total": total_n, "pagina": pag_n, "por_pagina": por_n, "total_paginas": total_paginas_n,
+                "offset": offset_n, "opcoes": _POR_PAGINA_OPCOES, "paginas": _paginas(pag_n, total_paginas_n),
+                "base": _qs(estado, "pagina_novos"),
+                "base_pp": _qs(estado, "pagina_novos", "por_pagina_novos"),
+            },
         },
     )
 

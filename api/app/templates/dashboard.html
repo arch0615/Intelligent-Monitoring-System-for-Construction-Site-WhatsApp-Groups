@@ -5,6 +5,8 @@
 
 {% block conteudo %}
 <style>
+  /* Cards e cards de gráfico do dashboard com 40% de opacidade no fundo */
+  .content .card { background: rgba(13, 21, 40, 0.4); }
   .dash-filtros { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; }
   .dash-filtros .seg { display:inline-flex; background:#0c1426; border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
   .dash-filtros .seg button { font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:transparent; border:0; padding:7px 13px; border-radius:8px; cursor:pointer; transition:.15s; }

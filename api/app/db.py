@@ -245,7 +245,7 @@ def buscar_usuario_por_email(email: str) -> dict[str, Any] | None:
 
 def buscar_usuario_por_id(uid: int) -> dict[str, Any] | None:
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT id, nome, email FROM usuarios WHERE id = %s", (uid,))
+        cur.execute("SELECT id, nome, email, criado_em FROM usuarios WHERE id = %s", (uid,))
         return cur.fetchone()
 
 
@@ -293,13 +293,8 @@ def _filtros_lista(urgencia: str | None, grupo_id: int | None, categoria: str | 
     return cond, params
 
 
-def lista_mae_itens(status: str = "aberto", urgencia: str | None = None,
-                    grupo_id: int | None = None, categoria: str | None = None
-                    ) -> list[dict[str, Any]]:
-    """Itens já incorporados à Lista Mãe, filtrados. status: aberto|resolvidos|todos.
-
-    Ordena: em aberto primeiro, itens de hoje no topo, depois por urgência e recência.
-    """
+def _cond_lista(status: str, urgencia: str | None, grupo_id: int | None,
+                categoria: str | None) -> tuple[list[str], list[Any]]:
     cond = ["a.na_lista_mae = true"]
     params: list[Any] = []
     fc, fp = _filtros_lista(urgencia, grupo_id, categoria)
@@ -308,6 +303,32 @@ def lista_mae_itens(status: str = "aberto", urgencia: str | None = None,
         cond.append("a.resolvido = false")
     elif status == "resolvidos":
         cond.append("a.resolvido = true")
+    return cond, params
+
+
+def lista_mae_contar(status: str = "aberto", urgencia: str | None = None,
+                     grupo_id: int | None = None, categoria: str | None = None) -> int:
+    """Total de itens da Lista Mãe que casam com o filtro (para a paginação)."""
+    cond, params = _cond_lista(status, urgencia, grupo_id, categoria)
+    sql = f"""SELECT count(*) AS n FROM analises a
+              JOIN mensagens m ON m.id = a.mensagem_id
+              JOIN grupos g    ON g.id = m.grupo_id
+              WHERE {' AND '.join(cond)}"""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, params)
+        return cur.fetchone()["n"]
+
+
+def lista_mae_itens(status: str = "aberto", urgencia: str | None = None,
+                    grupo_id: int | None = None, categoria: str | None = None,
+                    limit: int | None = None, offset: int = 0
+                    ) -> list[dict[str, Any]]:
+    """Itens já incorporados à Lista Mãe, filtrados. status: aberto|resolvidos|todos.
+
+    Ordena: em aberto primeiro, itens de hoje no topo, depois por urgência e recência.
+    limit/offset paginam o resultado (limit=None traz tudo — usado no export PDF).
+    """
+    cond, params = _cond_lista(status, urgencia, grupo_id, categoria)
     sql = f"""
         SELECT a.id, a.categoria, a.urgencia, a.resumo, a.criado_em,
                a.resolvido, a.resolvido_em,
@@ -324,12 +345,21 @@ def lista_mae_itens(status: str = "aberto", urgencia: str | None = None,
                  {_ORDEM_URGENCIA},
                  a.criado_em DESC
     """
+    if limit is not None:
+        sql += " LIMIT %s OFFSET %s"
+        params = [*params, limit, offset]
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(sql, params)
         return cur.fetchall()
 
 
-def lista_mae_novos() -> list[dict[str, Any]]:
+def lista_mae_novos_contar() -> int:
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) AS n FROM analises WHERE na_lista_mae = false")
+        return cur.fetchone()["n"]
+
+
+def lista_mae_novos(limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
     """Itens ainda não incorporados à Lista Mãe (inbox de triagem)."""
     sql = f"""
         SELECT a.id, a.categoria, a.urgencia, a.resumo, a.criado_em,
@@ -340,8 +370,12 @@ def lista_mae_novos() -> list[dict[str, Any]]:
         WHERE a.na_lista_mae = false
         ORDER BY {_ORDEM_URGENCIA}, a.criado_em DESC
     """
+    params: list[Any] = []
+    if limit is not None:
+        sql += " LIMIT %s OFFSET %s"
+        params = [limit, offset]
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, params)
         return cur.fetchall()
 
 

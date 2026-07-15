@@ -1,32 +1,102 @@
 {% extends "base.html" %}
 {% block titulo %}Meu perfil{% endblock %}
 {% block cabecalho %}Meu perfil{% endblock %}
-{% block subcabecalho %}Dados da conta e senha{% endblock %}
+{% block subcabecalho %}Gerencie seus dados de conta e senha{% endblock %}
 
 {% block conteudo %}
-  {% if ok %}<div class="card pad" style="margin-bottom:16px;color:var(--green);border-color:var(--green)">Alterações salvas com sucesso.</div>{% endif %}
-  {% if erro %}<div class="card pad" style="margin-bottom:16px;color:var(--crit);border-color:var(--crit)">{{ erro }}</div>{% endif %}
+<style>
+  .perfil-wrap { max-width: 900px; }
+  /* Cabeçalho do perfil */
+  .perfil-hero { display: flex; align-items: center; gap: 20px; padding: 24px; overflow: hidden; position: relative; }
+  .perfil-hero::after { content: ""; position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(520px 200px at 88% -40%, rgba(124,58,237,.28), transparent 60%),
+                radial-gradient(420px 200px at 10% 140%, rgba(59,130,246,.22), transparent 60%); }
+  .perfil-hero > * { position: relative; z-index: 1; }
+  .perfil-av { width: 84px; height: 84px; border-radius: 50%; flex: 0 0 auto;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+    display: grid; place-items: center; font-size: 32px; font-weight: 800;
+    box-shadow: 0 8px 24px rgba(99,102,241,.4); border: 3px solid rgba(255,255,255,.12); }
+  .perfil-nome { font-size: 23px; font-weight: 800; margin: 0; }
+  .perfil-email { color: var(--muted); font-size: 14px; margin: 3px 0 0; }
+  .perfil-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+  .perfil-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    color: #cfe0ff; background: rgba(59,130,246,.16); border: 1px solid rgba(91,143,214,.35);
+    padding: 4px 11px; border-radius: 999px; }
+  .perfil-chip svg { width: 13px; height: 13px; }
 
-  <form method="post" action="/perfil" style="max-width:560px">
-    <div class="card pad" style="margin-bottom:16px">
-      <div class="section-title">Dados da conta</div>
-      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Nome</label>
-      <input name="nome" type="text" value="{{ usuario.nome }}" required style="width:100%">
-      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">E-mail</label>
-      <input name="email" type="email" value="{{ usuario.email }}" required style="width:100%">
+  .perfil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  @media (max-width: 780px) { .perfil-grid { grid-template-columns: 1fr; } }
+
+  .fld { margin-top: 14px; }
+  .fld:first-of-type { margin-top: 4px; }
+  .fld label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .perfil-wrap input { width: 100%; }
+  .dica { color: var(--muted); font-size: 12.5px; margin-top: 12px; display: flex; gap: 7px; align-items: flex-start; }
+
+  .alerta { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-radius: 12px;
+    font-size: 13.5px; font-weight: 600; margin-bottom: 16px; }
+  .alerta.ok { color: #6ee7b7; background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.35); }
+  .alerta.err { color: #fca5a5; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.35); }
+
+  .perfil-acoes { display: flex; align-items: center; gap: 14px; }
+</style>
+
+<div class="perfil-wrap">
+  {% if ok %}<div class="alerta ok">✅ Alterações salvas com sucesso.</div>{% endif %}
+  {% if erro %}<div class="alerta err">⚠️ {{ erro }}</div>{% endif %}
+
+  {% set partes = usuario.nome.split() %}
+  {% set iniciais = (partes[0][0] ~ (partes[-1][0] if partes|length > 1 and partes[-1][0].isalpha() else '')) | upper %}
+  <div class="card perfil-hero">
+    <div class="perfil-av">{{ iniciais }}</div>
+    <div>
+      <h2 class="perfil-nome">{{ usuario.nome }}</h2>
+      <p class="perfil-email">{{ usuario.email }}</p>
+      <div class="perfil-chips">
+        <span class="perfil-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Conta ativa</span>
+        {% if usuario.criado_em %}
+        <span class="perfil-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Membro desde {{ usuario.criado_em.strftime("%d/%m/%Y") }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="/perfil">
+    <div class="perfil-grid">
+      <div class="card pad">
+        <div class="section-title"><span class="st-ic tint-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Dados da conta</div>
+        <div class="fld">
+          <label for="nome">Nome</label>
+          <input id="nome" name="nome" type="text" value="{{ usuario.nome }}" required>
+        </div>
+        <div class="fld">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" value="{{ usuario.email }}" required autocomplete="username">
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="section-title"><span class="st-ic tint-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Alterar senha <span class="count">opcional</span></div>
+        <div class="fld">
+          <label for="senha_atual">Senha atual</label>
+          <input id="senha_atual" name="senha_atual" type="password" autocomplete="current-password">
+        </div>
+        <div class="fld">
+          <label for="nova_senha">Nova senha</label>
+          <input id="nova_senha" name="nova_senha" type="password" minlength="6" autocomplete="new-password">
+        </div>
+        <div class="fld">
+          <label for="confirmar">Confirmar nova senha</label>
+          <input id="confirmar" name="confirmar" type="password" minlength="6" autocomplete="new-password">
+        </div>
+        <div class="dica"><span>🔒</span><span>Deixe os campos de senha em branco para manter a senha atual.</span></div>
+      </div>
     </div>
 
-    <div class="card pad" style="margin-bottom:16px">
-      <div class="section-title">Alterar senha <span class="count">opcional</span></div>
-      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Senha atual</label>
-      <input name="senha_atual" type="password" autocomplete="current-password" style="width:100%">
-      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Nova senha</label>
-      <input name="nova_senha" type="password" minlength="6" autocomplete="new-password" style="width:100%">
-      <label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Confirmar nova senha</label>
-      <input name="confirmar" type="password" minlength="6" autocomplete="new-password" style="width:100%">
-      <p class="meta" style="color:var(--muted);font-size:12.5px;margin-top:10px">Deixe em branco para manter a senha atual.</p>
+    <div class="perfil-acoes">
+      <button class="btn" type="submit">Salvar alterações</button>
+      <a class="btn ghost" href="/dashboard">Cancelar</a>
     </div>
-
-    <button class="btn" type="submit">Salvar</button>
   </form>
+</div>
 {% endblock %}

@@ -73,7 +73,23 @@
     .sidebar-logout:hover { background: var(--sidebar-active); color: #fff; }
     .sidebar-foot { padding: 12px 10px 2px; font-size: 11px; color: #5b6473; }
 
-    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .main {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative;
+      /* Galáxia escura: brilhos de nebulosa (roxo/azul) sobre o fundo */
+      background:
+        radial-gradient(1100px 620px at 80% -10%, rgba(124,58,237,.22), transparent 55%),
+        radial-gradient(880px 560px at 8% 108%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(720px 460px at 98% 92%, rgba(217,70,239,.12), transparent 55%),
+        radial-gradient(600px 600px at 50% 40%, rgba(56,189,248,.06), transparent 60%),
+        var(--bg);
+    }
+    /* Poeira estelar (starfield em SVG, repetido) */
+    .main::before {
+      content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: url('/static/stardust.svg') repeat 0 0 / 320px 320px;
+      opacity: .55;
+    }
+    .main > .topbar, .main > .content { position: relative; z-index: 1; }
     .topbar {
       min-height: 64px; background: var(--surface); border-bottom: 1px solid var(--line);
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -202,8 +218,14 @@
 
     /* filtros / forms */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    input[type=date], input[type=text], select {
+    input[type=date], input[type=text], input[type=email], input[type=password], input[type=number], select {
       font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: #0c1426; color: var(--ink);
+    }
+    /* Mantém o fundo azul-escuro mesmo quando o navegador preenche automaticamente */
+    input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--ink);
+      -webkit-box-shadow: 0 0 0 1000px #0c1426 inset;
+      caret-color: var(--ink);
     }
     input::placeholder { color: #5d6679; }
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.7); }

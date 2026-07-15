@@ -15,7 +15,8 @@
 
   .section-title.spread { display:flex; justify-content:space-between; align-items:center; gap:12px; }
 
-  .lm-item { align-items:center; }
+  .lm-item { align-items:center; overflow:hidden; transition: opacity .3s ease, height .3s ease, padding .3s ease, margin .3s ease; }
+  .lm-item.lm-saindo { opacity:0; padding-top:0; padding-bottom:0; border-bottom-color:transparent; }
   .lm-check { appearance:none; -webkit-appearance:none; flex:0 0 auto; width:20px; height:20px; border:2px solid var(--line); border-radius:6px; background:#0c1426; cursor:pointer; position:relative; transition:.15s; margin-top:1px; }
   .lm-check:hover { border-color:var(--accent); }
   .lm-check:checked { background:#22c55e; border-color:#22c55e; }
@@ -32,6 +33,19 @@
   .cat-pendencia { color:#fb923c; background:rgba(251,146,60,.14); }
   .cat-duvida    { color:#38bdf8; background:rgba(56,189,248,.14); }
   .cat-decisao   { color:#34d399; background:rgba(52,211,153,.14); }
+
+  .lm-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .lm-perpage { display:flex; align-items:center; gap:8px; font-weight:400; }
+  .lm-perpage select { padding:6px 10px; }
+  .lm-head-acoes { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .paginacao { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .pag-info { color:var(--muted); font-size:12.5px; }
+  .pag-nav { display:flex; gap:5px; align-items:center; }
+  .pag-btn { min-width:32px; height:32px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:8px; color:var(--ink); font-size:13px; font-weight:600; text-decoration:none; background:#0c1426; }
+  .pag-btn:hover { border-color:var(--accent); }
+  .pag-btn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .pag-btn.off { opacity:.4; pointer-events:none; }
+  .pag-elip { color:var(--muted); padding:0 4px; }
 </style>
 
 <!-- Barra de progresso -->
@@ -44,14 +58,21 @@
 </div>
 
 <!-- Novos itens aguardando triagem -->
-{% if novos %}
+{% if pag_n.total %}
 <div class="card pad" style="margin-bottom:16px">
-  <div class="section-title spread">
-    <span>🆕 Novos itens <span class="count">{{ novos|length }} aguardando</span></span>
-    <form method="post" action="/lista-mae/adicionar" style="margin:0">
-      <input type="hidden" name="todos" value="1">
-      <button class="btn" type="submit">Adicionar todos à Lista Mãe</button>
-    </form>
+  <div class="section-title lm-head">
+    <span>🆕 Novos itens <span class="count">{{ pag_n.total }} aguardando</span></span>
+    <span class="lm-head-acoes">
+      <span class="lm-perpage"><span class="count">por página</span>
+        <select onchange="location.href='/lista-mae?{{ pag_n.base_pp }}&por_pagina_novos='+this.value">
+          {% for o in pag_n.opcoes %}<option value="{{ o }}" {% if o == pag_n.por_pagina %}selected{% endif %}>{{ o }}</option>{% endfor %}
+        </select>
+      </span>
+      <form method="post" action="/lista-mae/adicionar" style="margin:0">
+        <input type="hidden" name="todos" value="1">
+        <button class="btn" type="submit">Adicionar todos à Lista Mãe</button>
+      </form>
+    </span>
   </div>
   {% for i in novos %}
     <div class="item">
@@ -70,6 +91,19 @@
       </form>
     </div>
   {% endfor %}
+  {% if pag_n.total_paginas > 1 %}
+  <div class="paginacao">
+    <span class="pag-info">Mostrando {{ pag_n.offset + 1 }}–{{ pag_n.offset + novos|length }} de {{ pag_n.total }}</span>
+    <div class="pag-nav">
+      <a class="pag-btn {{ 'off' if pag_n.pagina == 1 }}" href="/lista-mae?{{ pag_n.base }}&pagina_novos={{ pag_n.pagina - 1 }}" aria-label="Anterior">‹</a>
+      {% for p in pag_n.paginas %}
+        {% if p is none %}<span class="pag-elip">…</span>
+        {% else %}<a class="pag-btn {{ 'on' if p == pag_n.pagina }}" href="/lista-mae?{{ pag_n.base }}&pagina_novos={{ p }}">{{ p }}</a>{% endif %}
+      {% endfor %}
+      <a class="pag-btn {{ 'off' if pag_n.pagina == pag_n.total_paginas }}" href="/lista-mae?{{ pag_n.base }}&pagina_novos={{ pag_n.pagina + 1 }}" aria-label="Próxima">›</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 
@@ -106,7 +140,15 @@
 
 <!-- Lista Mãe -->
 <div class="card pad">
-  <div class="section-title">📋 Lista Mãe <span class="count">{{ itens|length }} {{ 'item' if itens|length == 1 else 'itens' }}</span></div>
+  <div class="section-title lm-head">
+    <span>📋 Lista Mãe <span class="count"><b id="lm-count">{{ pag.total }}</b> <span id="lm-count-rot">{{ 'item' if pag.total == 1 else 'itens' }}</span></span></span>
+    <span class="lm-perpage">
+      <span class="count">por página</span>
+      <select onchange="location.href='/lista-mae?{{ pag.base_pp }}&por_pagina='+this.value">
+        {% for o in pag.opcoes %}<option value="{{ o }}" {% if o == pag.por_pagina %}selected{% endif %}>{{ o }}</option>{% endfor %}
+      </select>
+    </span>
+  </div>
   {% if itens %}
     {% for i in itens %}
       <div class="item lm-item {{ 'resolvido' if i.resolvido }}" data-id="{{ i.id }}">
@@ -126,10 +168,28 @@
   {% else %}
     <div class="empty">Nenhum item para os filtros selecionados.</div>
   {% endif %}
+
+  {% if pag.total_paginas > 1 %}
+  <div class="paginacao">
+    <span class="pag-info">Mostrando {{ pag.offset + 1 }}–{{ pag.offset + itens|length }} de {{ pag.total }}</span>
+    <div class="pag-nav">
+      <a class="pag-btn {{ 'off' if pag.pagina == 1 }}" href="/lista-mae?{{ pag.base }}&pagina={{ pag.pagina - 1 }}" aria-label="Anterior">‹</a>
+      {% for p in pag.paginas %}
+        {% if p is none %}
+          <span class="pag-elip">…</span>
+        {% else %}
+          <a class="pag-btn {{ 'on' if p == pag.pagina }}" href="/lista-mae?{{ pag.base }}&pagina={{ p }}">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+      <a class="pag-btn {{ 'off' if pag.pagina == pag.total_paginas }}" href="/lista-mae?{{ pag.base }}&pagina={{ pag.pagina + 1 }}" aria-label="Próxima">›</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <script>
   (function () {
+    const STATUS = {{ f.status | tojson }};   // aberto | resolvidos | todos
     const total = () => parseInt(document.getElementById('lm-total').textContent) || 0;
     function updateProgress(delta) {
       const done = document.getElementById('lm-done');
@@ -140,6 +200,31 @@
       const pct = t ? Math.round(d / t * 100) : 0;
       document.getElementById('lm-pct').textContent = pct;
       document.getElementById('lm-bar').style.width = pct + '%';
+    }
+    function ajustarContagem(delta) {
+      const el = document.getElementById('lm-count');
+      const n = Math.max(0, (parseInt(el.textContent) || 0) + delta);
+      el.textContent = n;
+      document.getElementById('lm-count-rot').textContent = (n === 1 ? 'item' : 'itens');
+    }
+    function sairDaLista(row) {
+      // Some da lista: o item resolvido não segue entre os pendentes.
+      row.style.height = row.offsetHeight + 'px';
+      requestAnimationFrame(function () {
+        row.classList.add('lm-saindo');
+        row.style.height = '0px';
+      });
+      setTimeout(function () {
+        const lista = row.parentElement;
+        row.remove();
+        ajustarContagem(-1);
+        if (!lista.querySelector('.lm-item')) {
+          const vazio = document.createElement('div');
+          vazio.className = 'empty';
+          vazio.textContent = 'Tudo resolvido por aqui. 🎉';
+          lista.appendChild(vazio);
+        }
+      }, 340);
     }
     document.querySelectorAll('.lm-check').forEach(function (cb) {
       cb.addEventListener('change', async function () {
@@ -158,6 +243,9 @@
             ? ('✓ resolvido em ' + d.resolvido_em + (d.por ? ' por ' + d.por : ''))
             : '';
           updateProgress(d.resolvido ? 1 : -1);
+          // Se o item deixou de pertencer ao filtro atual, remove-o da lista.
+          const saiu = (STATUS === 'aberto' && d.resolvido) || (STATUS === 'resolvidos' && !d.resolvido);
+          if (saiu) sairDaLista(row);
         } catch (e) {
           cb.checked = !resolver;
           alert('Não foi possível atualizar o item. Tente novamente.');
